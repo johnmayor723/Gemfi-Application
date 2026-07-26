@@ -1,0 +1,9 @@
+process.env.SERVICE_NAME = "notification-service-test";
+process.env.SERVICE_VERSION = "1.0.0";
+process.env.NODE_ENV = "test";
+process.env.PORT = "3096";
+process.env.API_PREFIX = "/api/v1";
+process.env.MONGODB_URI = "mongodb://localhost:27017/notification_service_test";
+process.env.MONGODB_DATABASE = "notification_service_test";
+process.env.JWT_SECRET = "test-jwt-secret-key";
+process.env.LOG_LEVEL = "silent";

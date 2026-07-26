@@ -1,0 +1,34 @@
+==================================================
+FINERACT INTEGRATION
+==================================================
+
+Purpose
+
+Provides a single integration layer between the
+Account Service and Apache Fineract.
+
+Responsibilities
+
+- HTTP communication
+- Bearer token authentication
+- Timeouts
+- Error translation (future)
+- Retry logic (future)
+
+Current APIs
+
+GET Savings Account
+
+GET Client
+
+Future
+
+Create Savings Account
+
+Update Savings Account
+
+Close Account
+
+Activate Account
+
+Search Clients

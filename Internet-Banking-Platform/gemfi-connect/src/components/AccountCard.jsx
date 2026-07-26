@@ -1,0 +1,5 @@
+import React from 'react';
+import { WalletCards, Star } from 'lucide-react';
+export default function AccountCard({ account }) {
+  return <article className="bg-white border rounded-2xl p-5"><div className="flex justify-between"><span className="p-2.5 bg-[#e7f4ef] text-[#006f51] rounded-xl"><WalletCards size={20}/></span><div className="flex items-center gap-2">{account.isPrimary && <span className="text-xs px-2.5 py-1 bg-orange-50 text-[#ff832e] rounded-full h-fit flex items-center gap-1"><Star size={11} fill="currentColor"/>Primary</span>}<span className="text-xs px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full h-fit">{account.status || 'Active'}</span></div></div><p className="mt-5 font-semibold">{account.productName || account.accountType || 'Account'}</p><p className="text-sm text-slate-500 mt-1">{account.accountNumber || '—'}</p><p className="text-xl font-bold mt-4">{account.ledgerBalance ?? '—'} <span className="text-xs text-slate-500">{account.currency || 'NGN'}</span></p><p className="text-xs text-slate-500 mt-1">Available: {account.availableBalance ?? '—'} {account.currency || 'NGN'}</p></article>;
+}

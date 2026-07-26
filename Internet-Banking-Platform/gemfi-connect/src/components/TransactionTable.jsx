@@ -1,0 +1,6 @@
+import React from 'react';
+export default function TransactionTable({ transactions=[], loading=false }) {
+  if (loading) return <div className="space-y-3">{[1,2,3].map(i=><div key={i} className="h-14 bg-slate-100 animate-pulse rounded-xl"/>)}</div>;
+  if (!transactions.length) return <div className="py-12 text-center text-slate-500"><p className="font-medium text-slate-700">No transactions yet</p><p className="text-sm mt-1">Your activity will appear here.</p></div>;
+  return <div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="text-left text-slate-500 border-b">{['Date','Description','Type','Amount','Running balance'].map(x=><th className="py-3 px-2 font-medium" key={x}>{x}</th>)}</tr></thead><tbody>{transactions.map((item,i)=><tr key={`${item.date}-${i}`} className="border-b last:border-0"><td className="py-4 px-2 text-slate-500">{item.date}</td><td className="px-2 font-medium">{item.description}</td><td className="px-2">{item.type==='CREDIT'?<span className="text-emerald-700">Credit</span>:<span className="text-red-600">Debit</span>}</td><td className="px-2 font-semibold">{item.amount}</td><td className="px-2 text-slate-500">{item.runningBalance}</td></tr>)}</tbody></table></div>;
+}

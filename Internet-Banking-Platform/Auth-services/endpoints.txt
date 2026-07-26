@@ -1,0 +1,295 @@
+==================================================================
+AUTH SERVICE - API ENDPOINTS
+==================================================================
+
+Base URL   : http://<host>:<port>
+Mounting   : Health routes are mounted at "/".
+             Enrollment and Auth routes are both mounted at "/auth".
+
+Every response (success and error) is wrapped in the standard
+envelope:
+
+    Success:
+    {
+        "success": true,
+        "message": "",
+        "data": {},
+        "meta": { "timestamp": "" }
+    }
+
+    Error:
+    {
+        "success": false,
+        "message": "",
+        "error": { "code": "", "details": null },
+        "meta": { "timestamp": "" }
+    }
+
+Fields marked (required) must be present in the request body.
+Fields marked "Bearer <accessToken>" require the header:
+    Authorization: Bearer <accessToken>
+
+==================================================================
+HEALTH
+==================================================================
+
+------------------------------------------------------------------
+GET /health
+------------------------------------------------------------------
+Auth        : None
+Body        : None
+
+Response data:
+{
+    "service": "<SERVICE_NAME>",
+    "version": "<SERVICE_VERSION>",
+    "environment": "<NODE_ENV>"
+}
+
+==================================================================
+ENROLLMENT
+==================================================================
+Self-service Internet Banking activation flow for an existing
+Fineract account. Three steps: start -> verify -> complete.
+
+------------------------------------------------------------------
+POST /auth/enrollment/start
+------------------------------------------------------------------
+Auth        : None
+Description : Validates account ownership against the Account
+              Service and sends an Email OTP + SMS OTP.
+
+Request body:
+{
+    "accountNumber": "1234567890",   // (required) exactly 10 digits, numeric
+    "email":         "jane@bank.com",// (required) valid email
+    "phoneNumber":   "08012345678"   // (required) 10-15 characters
+}
+
+Response data:
+{
+    "enrollmentId": "<mongo id>",
+    "expiresAt":    "<ISO date>"     // enrollment record expires 15 minutes after creation
+}
+
+------------------------------------------------------------------
+POST /auth/enrollment/verify
+------------------------------------------------------------------
+Auth        : None
+Description : Verifies both OTPs sent during "start".
+
+Request body:
+{
+    "enrollmentId": "<mongo id>",    // (required)
+    "emailOtp":     "123456",        // (required) exactly 6 digits
+    "smsOtp":       "654321"         // (required) exactly 6 digits
+}
+
+Response data:
+{
+    "verified": true
+}
+
+------------------------------------------------------------------
+POST /auth/enrollment/complete
+------------------------------------------------------------------
+Auth        : None
+Description : Creates the Internet Banking user once the
+              enrollment has been verified, and logs the user in.
+
+Request body:
+{
+    "enrollmentId":    "<mongo id>",          // (required)
+    "username":        "janedoe",             // (required) 4-30 chars, letters/numbers/./_ only
+    "password":        "Str0ng!Passw0rd",     // (required) min 8 chars, upper+lower+number+special
+    "confirmPassword": "Str0ng!Passw0rd"      // (required) must match password
+}
+
+Response data:
+{
+    "accessToken":  "<jwt>",
+    "refreshToken": "<opaque token>",
+    "user": {
+        "accountNumber": "1234567890",
+        "username":      "janedoe",
+        "email":         "jane@bank.com",
+        "phoneNumber":   "08012345678"
+    }
+}
+
+==================================================================
+AUTH
+==================================================================
+Login, session and password management for existing Internet
+Banking users.
+
+------------------------------------------------------------------
+POST /auth/register
+------------------------------------------------------------------
+Auth        : None
+Description : Alias for /auth/enrollment/complete. Uses the same
+              validation rules and calls the exact same service
+              logic (enrollmentService.complete) under the hood.
+
+Request body: identical to POST /auth/enrollment/complete above.
+
+Response data: identical to POST /auth/enrollment/complete above.
+
+------------------------------------------------------------------
+POST /auth/login
+------------------------------------------------------------------
+Auth        : None
+Description : Authenticates with username, email, or account
+              number. Locks the account for
+              ACCOUNT_LOCK_MINUTES after MAX_LOGIN_ATTEMPTS
+              consecutive failures.
+
+Request body:
+{
+    "identifier": "janedoe",             // (required) username, email, or 10-digit account number, 4-100 chars
+    "password":   "Str0ng!Passw0rd"      // (required) min 8 chars
+}
+
+Response data:
+{
+    "accessToken":  "<jwt>",
+    "refreshToken": "<opaque token>",
+    "user": {
+        "accountNumber": "1234567890",
+        "username":      "janedoe",
+        "email":         "jane@bank.com",
+        "phoneNumber":   "08012345678"
+    }
+}
+
+------------------------------------------------------------------
+POST /auth/refresh-token
+------------------------------------------------------------------
+Auth        : None (possession of a valid refresh token is the
+              credential)
+Description : Rotates the supplied refresh token: the old token
+              is revoked and a new access/refresh pair is issued.
+
+Request body:
+{
+    "refreshToken": "<opaque token>"     // (required)
+}
+
+Response data:
+{
+    "accessToken":  "<jwt>",
+    "refreshToken": "<new opaque token>"
+}
+
+------------------------------------------------------------------
+POST /auth/logout
+------------------------------------------------------------------
+Auth        : None (possession of a valid refresh token is the
+              credential)
+Description : Revokes the supplied refresh token only (current
+              device/session).
+
+Request body:
+{
+    "refreshToken": "<opaque token>"     // (required)
+}
+
+Response data:
+{
+    "loggedOut": true
+}
+
+------------------------------------------------------------------
+POST /auth/logout-all
+------------------------------------------------------------------
+Auth        : Bearer <accessToken>
+Description : Revokes every refresh token (all devices/sessions)
+              belonging to the authenticated user.
+
+Request body: None
+
+Response data:
+{
+    "loggedOut": true
+}
+
+------------------------------------------------------------------
+GET /auth/sessions
+------------------------------------------------------------------
+Auth        : Bearer <accessToken>
+Description : Lists active sessions (refresh tokens) for the
+              authenticated user. Token hashes are never returned.
+
+Request body: None
+
+Response data:
+[
+    {
+        "id":         "<mongo id>",
+        "deviceId":   "<string|null>",
+        "deviceName": "<string|null>",
+        "ipAddress":  "<string|null>",
+        "userAgent":  "<string|null>",
+        "createdAt":  "<ISO date>",
+        "expiresAt":  "<ISO date>"
+    }
+]
+
+------------------------------------------------------------------
+POST /auth/forgot-password
+------------------------------------------------------------------
+Auth        : None
+Description : Looks up the user by identifier and emails a 6-digit
+              OTP (via the OTP module, referenceType
+              "PASSWORD_RESET") to be used as the reset token.
+
+Request body:
+{
+    "identifier": "janedoe"      // (required) username, email, or account number
+}
+
+Response data:
+{
+    "expiresAt": "<ISO date>"
+}
+
+------------------------------------------------------------------
+POST /auth/reset-password
+------------------------------------------------------------------
+Auth        : None
+Description : Verifies the OTP sent by /auth/forgot-password and
+              sets a new password. All existing sessions for the
+              user are revoked.
+
+Request body:
+{
+    "identifier":      "janedoe",             // (required) username, email, or account number
+    "token":           "123456",              // (required) the 6-digit OTP emailed to the user
+    "password":        "Ev3nStr0nger!",       // (required) min 8 chars
+    "confirmPassword": "Ev3nStr0nger!"        // (required) must match password
+}
+
+Response data:
+{
+    "reset": true
+}
+
+------------------------------------------------------------------
+POST /auth/change-password
+------------------------------------------------------------------
+Auth        : Bearer <accessToken>
+Description : Changes the password for the authenticated user.
+              All existing sessions (including the one used to
+              make this request) are revoked, forcing re-login.
+
+Request body:
+{
+    "currentPassword": "Str0ng!Passw0rd",     // (required)
+    "newPassword":     "Ev3nStr0nger!",       // (required) min 8 chars
+    "confirmPassword": "Ev3nStr0nger!"        // (required) must match newPassword
+}
+
+Response data:
+{
+    "changed": true
+}

@@ -1,0 +1,14 @@
+const {
+    body
+} = require("../../../validators");
+
+module.exports = [
+
+    body("fineractAccountId")
+        .trim()
+        .notEmpty()
+        .withMessage(
+            "Fineract account ID is required."
+        )
+
+];

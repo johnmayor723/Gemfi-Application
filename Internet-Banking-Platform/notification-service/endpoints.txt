@@ -1,0 +1,140 @@
+==================================================================
+NOTIFICATION SERVICE - API ENDPOINTS
+==================================================================
+
+Base URL   : http://<host>:<port>  (default port 4006)
+Mounting   : All routes are mounted at "/".
+
+Every response (success and error) is wrapped in the standard
+envelope:
+
+    Success:
+    {
+        "success": true,
+        "message": "",
+        "data": {},
+        "meta": { "timestamp": "" }
+    }
+
+    Error:
+    {
+        "success": false,
+        "message": "",
+        "error": { "code": "", "details": null },
+        "meta": { "timestamp": "", "correlationId": "" }
+    }
+
+CORRELATION ID
+--------------
+Every response carries an X-Correlation-Id header (echoed from
+the request if you send one, otherwise generated).
+
+TWO API SURFACES
+-----------------
+- /internal/notifications — unauthenticated, service-to-service.
+  Same convention as Account Service's /internal/* routes:
+  internal by naming/trust, not enforced. Other services (e.g.
+  Transaction Service) call this after events worth notifying
+  someone about.
+- /notifications — Bearer-authenticated, customer-facing inbox
+  for the end user to see their own notification history.
+
+Sending never throws on delivery failure — a bad/missing Gmail
+or Termii credential logs the attempt as status: "FAILED" and
+still returns 201. The caller (another service, or you via curl)
+always gets back a log entry either way.
+
+==================================================================
+HEALTH
+==================================================================
+
+------------------------------------------------------------------
+GET /health
+------------------------------------------------------------------
+Auth        : None
+Body        : None
+
+Response data:
+{
+    "service": "<SERVICE_NAME>",
+    "version": "<SERVICE_VERSION>",
+    "environment": "<NODE_ENV>"
+}
+
+==================================================================
+INTERNAL (service-to-service, unauthenticated)
+==================================================================
+
+------------------------------------------------------------------
+POST /internal/notifications
+------------------------------------------------------------------
+Auth        : None (internal by convention)
+Description : Sends a notification now via the given channel and
+              logs the outcome (SENT or FAILED) regardless of
+              whether delivery actually succeeded.
+
+Request body:
+{
+    "userId":    "<the recipient's user id in the calling service>",  // (required)
+    "channel":   "EMAIL|SMS",                     // (required)
+    "type":      "TRANSFER_COMPLETED",             // (required) open string, any event name
+    "recipient": "jane@example.com",               // (required) email address or phone number
+    "subject":   "Transfer complete",               // optional, EMAIL only
+    "message":   "Your transfer of 500 NGN..."       // (required)
+}
+
+Response data (201):
+{
+    "id": "<mongo id>",
+    "channel": "EMAIL",
+    "type": "TRANSFER_COMPLETED",
+    "recipient": "jane@example.com",
+    "subject": "Transfer complete",
+    "message": "Your transfer of 500 NGN...",
+    "status": "SENT|FAILED",
+    "isRead": false,
+    "createdAt": "<ISO date>"
+}
+
+------------------------------------------------------------------
+GET /internal/notifications?userId=&page=&limit=
+------------------------------------------------------------------
+Auth        : None (internal by convention)
+Description : Looks up a user's notification history — for
+              support/debugging from another service or an admin
+              tool, not for the end user directly (see
+              GET /notifications below for that).
+
+Query params:
+    userId  (required)
+    page    optional, default 1
+    limit   optional, default 20, max 100
+
+Response data:
+{
+    "notifications": [ { ...same shape as POST response... } ],
+    "pagination": { "page": 1, "limit": 20, "total": 1 }
+}
+
+==================================================================
+CUSTOMER-FACING (Bearer-authenticated)
+==================================================================
+
+------------------------------------------------------------------
+GET /notifications?page=&limit=
+------------------------------------------------------------------
+Auth        : Bearer <accessToken>
+Description : Paginated notification inbox for the caller, newest
+              first.
+
+Response data: same shape as the internal list endpoint above.
+
+------------------------------------------------------------------
+PATCH /notifications/:id/read
+------------------------------------------------------------------
+Auth        : Bearer <accessToken>
+Description : Marks one of the caller's own notifications as read.
+
+Request body: None
+
+Response data: the updated notification, same shape as POST /internal/notifications.

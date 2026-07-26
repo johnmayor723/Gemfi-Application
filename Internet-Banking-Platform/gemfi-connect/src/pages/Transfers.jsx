@@ -1,0 +1,1 @@
+import React from 'react';import PageHeader from '@/components/PageHeader';import TransferForm from '@/components/TransferForm';export default function Transfers(){return <div className="max-w-2xl"><PageHeader title="Send money" description="Transfer funds to another Gemfi account."/><TransferForm/></div>}

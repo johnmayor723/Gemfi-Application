@@ -1,0 +1,16 @@
+{
+  "name": "Gemfi · Fineract Console",
+  "short_name": "Gemfi Console",
+  "description": "Gemfi staff console for the Fineract core banking platform.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#00847D",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "114x126",
+      "type": "image/png"
+    }
+  ]
+}

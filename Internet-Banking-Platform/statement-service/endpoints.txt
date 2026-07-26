@@ -1,0 +1,127 @@
+==================================================================
+STATEMENT SERVICE - API ENDPOINTS
+==================================================================
+
+Base URL   : http://<host>:<port>  (default port 4007)
+Mounting   : All routes are mounted at "/".
+
+Every JSON response (success and error) is wrapped in the standard
+envelope:
+
+    Success:
+    {
+        "success": true,
+        "message": "",
+        "data": {},
+        "meta": { "timestamp": "" }
+    }
+
+    Error:
+    {
+        "success": false,
+        "message": "",
+        "error": { "code": "", "details": null },
+        "meta": { "timestamp": "", "correlationId": "" }
+    }
+
+format=csv is the one exception — it returns a raw CSV file body
+(Content-Type: text/csv), not the JSON envelope, since it's a file
+download.
+
+CORRELATION ID
+--------------
+Every response carries an X-Correlation-Id header (echoed from
+the request if you send one, otherwise generated).
+
+SCOPE
+-----
+Savings account statements only for v1 — loan statements aren't
+covered (loans have their own repayment-schedule concept that
+doesn't map cleanly onto this transaction-ledger shape). No PDF
+export — CSV/JSON only, since PDF generation would need a new
+library requiring separate approval.
+
+Statements are self-service only: accountNumber must be the
+caller's own account (from the JWT). There's no roles/admin system
+in this platform yet to safely allow cross-user statement access.
+
+==================================================================
+HEALTH
+==================================================================
+
+------------------------------------------------------------------
+GET /health
+------------------------------------------------------------------
+Auth        : None
+Body        : None
+
+Response data:
+{
+    "service": "<SERVICE_NAME>",
+    "version": "<SERVICE_VERSION>",
+    "environment": "<NODE_ENV>"
+}
+
+==================================================================
+STATEMENTS
+==================================================================
+
+------------------------------------------------------------------
+GET /statements?accountNumber=&startDate=&endDate=&format=
+------------------------------------------------------------------
+Auth        : Bearer <accessToken>
+Description : Generates a statement for the caller's own savings
+              account over a date range, with a running balance
+              and summary.
+
+Query params:
+    accountNumber  (required) exactly 10 digits, must be the
+                   caller's own account
+    startDate      optional ISO 8601 date; defaults to the 1st of
+                   the current calendar month
+    endDate        optional ISO 8601 date; defaults to today
+    format         optional, "json" (default) or "csv"
+
+Response data (format=json, 200):
+{
+    "accountNumber": "2035167176",
+    "accountName": "mayowa john olu",
+    "period": { "startDate": "2026-06-01", "endDate": "2026-07-31" },
+    "openingBalance": 0,
+    "closingBalance": 68400.04,
+    "summary": {
+        "totalCredits": 70100.04,
+        "totalDebits": 1700,
+        "transactionCount": 10
+    },
+    "transactions": [
+        {
+            "date": "2026-06-28",
+            "type": "CREDIT",
+            "amount": 20000,
+            "runningBalance": 20000,
+            "description": "Deposit"
+        }
+    ]
+}
+
+Notes on balance calculation:
+- openingBalance is reverse-engineered from the first line in
+  range (its own runningBalance minus/plus its own amount
+  depending on CREDIT/DEBIT) — the date-filtered result set from
+  Account Service doesn't include the transaction just before the
+  range, so this avoids a second fetch.
+- If there are no transactions in the requested range, both
+  openingBalance and closingBalance are returned as null rather
+  than guessed — extend the date range to get a real balance.
+
+Response (format=csv, 200): raw CSV body, header row + one row per
+transaction + a summary footer (account, period, opening/closing
+balance, totals), Content-Disposition: attachment.
+
+Possible errors:
+- 400 ValidationError    : bad payload (missing/invalid accountNumber,
+                            malformed dates, invalid format)
+- 403 AuthorizationError : accountNumber does not belong to the caller
+- 404 NotFoundError      : account not found
+- 422 BusinessRuleError  : account not active

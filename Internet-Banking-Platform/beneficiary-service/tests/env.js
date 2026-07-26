@@ -1,0 +1,11 @@
+process.env.SERVICE_NAME = "beneficiary-service-test";
+process.env.SERVICE_VERSION = "1.0.0";
+process.env.NODE_ENV = "test";
+process.env.PORT = "3097";
+process.env.API_PREFIX = "/api/v1";
+process.env.MONGODB_URI = "mongodb://localhost:27017/beneficiary_service_test";
+process.env.MONGODB_DATABASE = "beneficiary_service_test";
+process.env.JWT_SECRET = "test-jwt-secret-key";
+process.env.ACCOUNT_SERVICE_URL = "http://localhost:9991";
+process.env.LOG_LEVEL = "silent";
+process.env.INTERNAL_SERVICE_TOKEN = "test-internal-service-token";

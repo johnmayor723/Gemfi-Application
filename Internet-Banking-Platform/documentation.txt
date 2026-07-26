@@ -1,0 +1,418 @@
+==================================================================
+INTERNET BANKING PLATFORM - SERVICE & ENDPOINT DOCUMENTATION
+==================================================================
+
+Generated from a direct source read of every service in this monorepo
+(2026-07-22). This document describes what the code actually does,
+not what was originally designed - where the two differ, the
+discrepancy is noted.
+
+Updated 2026-07-23: three of the five Critical audit findings that
+were open as of the original 2026-07-22 read have since been fixed
+(KYC self-approval via unauthenticated PATCH, notification-service's
+unauthenticated /internal/notifications, and the account-service
+double-mounted routing bug). Details are inline below at each
+affected service. The other two Critical findings from the original
+audit (KYC has no auth on any endpoint beyond the PATCH whitelist;
+live MongoDB Atlas/JWT credentials in git history) remain open and
+are intentionally deferred - see project memory for reasoning.
+
+Every service follows the Banking Template: config/ controllers/
+middleware/ integrations/ modules/ routes/ validators/ responses/
+errors/, with each module containing model/repository/service/
+controller/validator/routes. Every JSON response (success and error)
+uses the standard envelope:
+
+    Success:
+    { "success": true, "message": "", "data": {}, "meta": {"timestamp": ""} }
+
+    Error:
+    { "success": false, "message": "", "error": {"code": "", "details": null},
+      "meta": { "timestamp": "", "correlationId": "" } }
+
+==================================================================
+SERVICE INVENTORY
+==================================================================
+
+  Port  Service                    Status
+  ----  -------------------------  --------------------------------
+  4000  kyc-service                Live; still no auth/validation on
+                                    any endpoint, but the self-approval
+                                    PATCH hole is closed (see below);
+                                    several broken/dead routes remain
+                                    (see findings report)
+  4001  account-service            Production Ready (per ARCHITECTURE.md)
+  4002  Auth-services              Implementation complete
+  4003  customer-profile-service   Complete (pure aggregator)
+  4004  transaction-service        Complete (money movement core)
+  4005  beneficiary-service        Complete
+  4006  notification-service       Complete
+  4007  statement-service          Complete (pure aggregator)
+   -    banking-platform-template  Canonical scaffold, not a running
+                                    service - clone this for new
+                                    services, never invent structure
+   -    gemfi-connect              Frontend web client (Vite/React),
+                                    not a backend microservice; the
+                                    presumed consumer of these APIs
+
+Not yet built (per ARCHITECTURE.md's documented order): Device
+Service, Audit Service (platform-wide), Reporting Service,
+Administration Service.
+
+FIXED 2026-07-23 - account-service double-mounted routing: this was
+previously double-mounted (routes/index.js mounted accountModule and
+customerModule under router.use("/accounts", ...) on top of paths
+that already included their own "/accounts" or "/internal" prefix,
+producing /accounts/accounts/validate, /accounts/internal/accounts/...,
+etc). account-service's own dev notes (src/modules/accounts/
+documentation.txt, ACC-006) confirm the doubled path was a bug, not
+the intended design. index.js now mounts both routers at "/", and all
+five caller account.client.js files (Auth-services,
+customer-profile-service, transaction-service, beneficiary-service,
+statement-service) were updated to match. Every path below already
+reflects the corrected, non-doubled routes.
+
+None of the services apply the "/api/v1" apiPrefix config value to
+their actual route mounting (it's read from env/config but never
+passed to app.use()) - despite being defined in every service's
+config, it is dead configuration everywhere except kyc-service, which
+is the one service that actually does mount routes under /api/v1.
+
+==================================================================
+1. KYC SERVICE - port 4000
+==================================================================
+
+Base path: /api/v1 (the one service that actually applies its prefix)
+Auth: NONE on any endpoint - src/middleware/auth.js exists but is an
+empty file, never wired into any route. (Still open/deferred - see
+project memory.)
+
+  GET    /api/v1/health
+  POST   /api/v1/customers/:customerId/kyc              create KYC profile
+  GET    /api/v1/customers/:customerId/kyc               aggregated KYC profile
+  PATCH  /api/v1/customers/:customerId/kyc               update KYC profile - FIXED 2026-07-23: previously wrote the
+                                                            raw request body straight to Mongo with no whitelist,
+                                                            letting an unauthenticated caller set status/verification/
+                                                            kycLevel directly (self-approve their own KYC). Now
+                                                            allow-lists zero fields (every legitimate field already has
+                                                            its own dedicated endpoint below), so any body returns 400.
+  POST   /api/v1/customers/:customerId/photo              upload photo   [BROKEN - see report]
+  GET    /api/v1/customers/:customerId/photo              get photo      [BROKEN - see report]
+  DELETE /api/v1/customers/:customerId/photo              delete photo   [BROKEN - see report]
+  POST   /api/v1/customers/:customerId/signature          upload signature
+  GET    /api/v1/customers/:customerId/signature          get signature
+  DELETE /api/v1/customers/:customerId/signature          delete signature
+  POST   /api/v1/customers/:customerId/documents          upload document
+  GET    /api/v1/customers/:customerId/documents          list documents
+  GET    /api/v1/documents/:documentId                    get one document
+  GET    /api/v1/documents/:documentId/download            download document file
+  DELETE /api/v1/documents/:documentId                     soft-delete document
+  POST   /api/v1/customers/:customerId/bvn/verify          verify BVN (mock provider only)
+  GET    /api/v1/customers/:customerId/bvn                 get stored BVN result
+  POST   /api/v1/customers/:customerId/nin/verify           verify NIN (mock provider only)
+  GET    /api/v1/customers/:customerId/nin                  get stored NIN result
+  GET    /api/v1/customers/:customerId/status                overall KYC completion status
+  POST   /api/v1/customers/:customerId/identification        create identification record
+  PUT    /api/v1/customers/:customerId/identification        update identification record
+  GET    /api/v1/customers/:customerId/identification         get identification record
+  PUT    /api/v1/customers/:customerId/address                update address
+  GET    /api/v1/customers/:customerId/address                get address
+  POST   /api/v1/customers/:customerId/address/proof           upload proof of address
+  POST   /api/v1/customers/:customerId/address/verify           verify address
+  POST   /api/v1/customers/:customerId/next-of-kin              create next of kin
+  GET    /api/v1/customers/:customerId/next-of-kin               list next of kin
+  PUT    /api/v1/next-of-kin/:id                                  update next of kin
+  DELETE /api/v1/next-of-kin/:id                                  delete next of kin
+  POST   /api/v1/customers/:customerId/references                 create account reference
+  GET    /api/v1/customers/:customerId/references                  list references
+  PUT    /api/v1/references/:id                                    update reference
+  DELETE /api/v1/references/:id                                    delete reference
+  POST   /api/v1/references/:id/letter                             upload reference letter
+  GET    /api/v1/files/:fileId                                     download any stored file by ID
+  GET    /api/v1/customers/:customerId/audit                        customer audit timeline (uncommitted locally)
+  GET    /api/v1/audit/:id                                           get single audit record (uncommitted locally)
+  GET    /api/v1/audit                                                list all audit records (uncommitted locally)
+
+Outbound calls: NONE. BVN/NIN "verification" providers are fully
+mocked in-process (provider.factory.js always returns the dummy
+provider regardless of configured provider name) - no real
+third-party or cross-service HTTP traffic happens here today.
+
+Called by: customer-profile-service (GET /api/v1/customers/:customerId/status).
+
+==================================================================
+2. ACCOUNT SERVICE - port 4001
+==================================================================
+
+Base path: none (mounted at root, apiPrefix config is dead)
+Auth: public routes have NONE. Internal routes are now gated -
+FIXED 2026-07-23: added internal-auth.middleware.js, wired into every
+/internal/* route below, checking a shared x-internal-token header
+(timing-safe compare against INTERNAL_SERVICE_TOKEN) - this applies
+platform-wide, see the Auth boundary summary at the end of this doc.
+
+  GET  /health
+
+  Public (used by Auth Service, Beneficiary Service for verification) - still no auth:
+  POST /accounts/validate                         validate account ownership (name/email/phone match)
+  GET  /accounts/name-enquiry/:accountNumber       name enquiry by account number
+
+  Internal (called by every other service, gated by x-internal-token):
+  POST /internal/accounts                                    create account<->Fineract mapping
+  GET  /internal/accounts/:accountNumber                     get mapping by account number
+  GET  /internal/accounts/client/:clientId                   get all accounts for a Fineract client
+  GET  /internal/accounts/fineract/:fineractAccountId        get mapping by Fineract account id
+  POST /internal/accounts/sync                               sync/create mapping from Fineract
+  GET  /internal/customer/:clientId                          Fineract client demographic lookup
+  GET  /internal/customer/:clientId/loans                    client loan accounts
+  GET  /internal/customer/accounts/:accountId/transactions   paginated/date-filtered savings transactions
+                                                                (Fineract has no native date filter - this
+                                                                service fetches the full history and filters/
+                                                                paginates in application code)
+
+Outbound calls: Fineract only (core banking system), via
+src/integrations/fineract/fineract.client.js - getSavingsAccount,
+getClient, getClientAccounts, getSavingsTransactions.
+
+Called by (all sending x-internal-token on internal routes):
+  - Auth-services            -> validate, name-enquiry, internal/accounts/:accountNumber (enrollment)
+  - customer-profile-service -> internal/accounts/client/:clientId, internal/customer/:clientId,
+                                 internal/customer/:clientId/loans,
+                                 internal/customer/accounts/:accountId/transactions
+  - transaction-service      -> internal/accounts/:accountNumber (every transfer/standing-order/
+                                 bulk-transfer/scheduler flow, to resolve the caller's own account)
+  - beneficiary-service      -> internal/accounts/:accountNumber (same-bank beneficiary verification)
+  - statement-service        -> internal/accounts/:accountNumber, internal/customer/accounts/:id/transactions
+
+account-service itself calls no other platform microservice.
+
+==================================================================
+3. AUTH SERVICE (Auth-services) - port 4002
+==================================================================
+
+Base path: none (mounted at root). All routes below are mounted at
+/auth except /health.
+
+  GET  /health                          NONE            liveness/version
+  POST /auth/enrollment/start           NONE            validate account ownership via account-service,
+                                                          create pending enrollment, send email+SMS OTP
+  POST /auth/enrollment/verify          NONE            verify email+SMS OTPs for an enrollment
+  POST /auth/enrollment/complete        NONE            create Internet Banking user, log in
+  POST /auth/register                   NONE            alias of /auth/enrollment/complete (identical validator/service call)
+  POST /auth/login                      NONE            authenticate by username/email/account number + password
+  POST /auth/refresh-token              NONE (refresh token is the credential)   rotate refresh token, issue new access token
+  POST /auth/logout                     NONE (refresh token is the credential)   revoke one refresh token
+  POST /auth/logout-all                 Bearer           revoke all refresh tokens for the user
+  GET  /auth/sessions                   Bearer           list active sessions
+  POST /auth/forgot-password            NONE             look up user, send password-reset OTP by email
+  POST /auth/reset-password             NONE             verify reset OTP, set new password, revoke all sessions
+  POST /auth/change-password            Bearer           verify current password, set new password, revoke all sessions
+  GET  /auth/audit                      Bearer           paginated audit trail for the authenticated user
+
+Outbound calls: account-service only, via
+src/integrations/account/account.client.js (sends x-internal-token
+on the internal call):
+  - POST /accounts/validate                    (enrollment start)
+  - GET  /internal/accounts/:accountNumber      (enrollment start)
+  - nameEnquiry() is implemented but currently unused by any caller
+
+Called by: every service's own users authenticate here first; other
+services do not call Auth Service directly - they verify the JWT
+locally using the shared JWT_SECRET instead (stateless verification,
+no runtime dependency on Auth Service being up).
+
+==================================================================
+4. CUSTOMER PROFILE SERVICE - port 4003
+==================================================================
+
+Base path: none (mounted at root). Pure aggregator - no model, no
+repository, nothing persisted.
+
+  GET /health                    NONE     liveness/version
+  GET /profile                   Bearer   aggregates account + customer + loans + kyc for the
+                                           caller (Promise.allSettled; partial failures degrade
+                                           to a "warnings" array instead of a 500)
+  GET /profile/transactions      Bearer   transactions for the caller's own account; accountNumber
+                                           is resolved against the caller's OWN account list fetched
+                                           fresh from account-service - a client-supplied Fineract/
+                                           internal id is never trusted directly
+
+Outbound calls (account-service calls send x-internal-token):
+  - account-service: GET internal/accounts/client/:clientId,
+    GET internal/customer/:clientId, GET internal/customer/:clientId/loans,
+    GET internal/customer/accounts/:accountId/transactions
+  - kyc-service: GET /api/v1/customers/:customerId/status
+
+Called by: no other backend service (this is a top-level aggregator
+consumed by the frontend client).
+
+==================================================================
+5. TRANSACTION SERVICE - port 4004
+==================================================================
+
+Base path: none (mounted at root). This is the money-movement core:
+transfer, standing-order, bulk-transfer modules, plus internal
+otp/fraud/limits modules and a scheduler poller.
+
+  GET  /health                                    NONE
+
+  POST /transfers                                 Bearer + Idempotency-Key   initiate transfer, sends OTP
+  POST /transfers/:id/confirm                     Bearer + Idempotency-Key   verify OTP, execute or schedule
+  GET  /transfers                                 Bearer                    paginated transfer history
+  GET  /transfers/:id                             Bearer                    get single transfer, owner-only
+  POST /transfers/:id/reverse                     Bearer + Idempotency-Key   initiate reversal (:id = ORIGINAL transfer's id)
+  POST /transfers/:id/reverse/confirm             Bearer + Idempotency-Key   confirm reversal (:id = ORIGINAL transfer's id)
+
+  POST /standing-orders                           Bearer + Idempotency-Key   create recurring order, sends OTP
+  POST /standing-orders/:id/confirm               Bearer + Idempotency-Key   verify OTP, activate order
+  GET  /standing-orders                           Bearer                    history
+  GET  /standing-orders/:id                       Bearer                    get one, owner-only
+  POST /standing-orders/:id/cancel                Bearer                    cancel order
+  POST /standing-orders/:id/pause                 Bearer                    pause order
+  POST /standing-orders/:id/resume                Bearer                    resume order
+
+  POST /bulk-transfers                            Bearer + Idempotency-Key   create batch, single OTP for whole batch
+  POST /bulk-transfers/:id/confirm                Bearer + Idempotency-Key   verify OTP, process items sequentially
+  GET  /bulk-transfers                            Bearer                    history
+  GET  /bulk-transfers/:id                        Bearer                    get one, owner-only
+
+Every request carries/echoes X-Correlation-Id (crypto.randomUUID() if
+not supplied by the caller).
+
+Outbound calls (account-service and notification-service calls both
+send x-internal-token):
+  - account-service: GET internal/accounts/:accountNumber - blocking,
+    called from every initiate/confirm/scheduler code path to resolve
+    the caller's own account. A hard dependency: if account-service is
+    down, transfers cannot be initiated or executed.
+  - notification-service: POST /internal/notifications - best-effort
+    only, wrapped so a failure never blocks a transfer; called from
+    transfer.service.js after a successful transfer execution. Standing
+    orders and bulk-transfer completions do NOT trigger a notification
+    of their own (only the individual transfer executions inside a
+    bulk batch do, via the shared execution path).
+  - Fineract (core banking, not a platform microservice): postWithdrawal/
+    postDeposit, used only in the OWN_ACCOUNT/INTERNAL transfer path.
+  - NIBSS (external NIP network): currently a dummy in-process adapter
+    that always returns SUCCESSFUL after a simulated delay - selected
+    via NIBSS_PROVIDER env var, swappable for a real provider later.
+
+Called by: no other backend service (this is a top-level, user-facing
+money-movement API).
+
+==================================================================
+6. BENEFICIARY SERVICE - port 4005
+==================================================================
+
+Base path: none (mounted at root).
+
+  GET    /health                 NONE     liveness/version
+  POST   /beneficiaries          Bearer   create beneficiary (same-bank identity is verified
+                                           against account-service and the real display name
+                                           overwrites whatever the client sent; other-bank
+                                           beneficiaries are stored as-supplied, unverified)
+  GET    /beneficiaries          Bearer   list caller's own beneficiaries, paginated, optional favorite filter
+  GET    /beneficiaries/:id      Bearer   get one, ownership-checked
+  PATCH  /beneficiaries/:id      Bearer   update nickname/isFavorite only, ownership-checked
+  DELETE /beneficiaries/:id      Bearer   delete, ownership-checked
+
+Outbound calls (sends x-internal-token):
+  - account-service: GET internal/accounts/:accountNumber - blocking,
+    called from create() for same-bank beneficiaries only.
+
+Called by: no other backend service.
+
+==================================================================
+7. NOTIFICATION SERVICE - port 4006
+==================================================================
+
+Base path: none (mounted at root).
+
+  GET   /health                          NONE            liveness/version
+  POST  /internal/notifications           x-internal-token FIXED 2026-07-23 (was NONE) - send + log a
+                                                            notification (EMAIL/SMS) for a given userId
+  GET   /internal/notifications           x-internal-token FIXED 2026-07-23 (was NONE) - list notifications
+                                                            for an arbitrary userId query param
+  GET   /notifications                    Bearer   list caller's own notifications (scoped to req.user.userId,
+                                                    a client-supplied userId cannot override this)
+  PATCH /notifications/:id/read           Bearer   mark caller's own notification read, ownership-checked
+
+Outbound calls: none to other platform microservices. Talks directly
+to Gmail (Nodemailer) and Termii (SMS) as external third-party
+providers - both wrapped so a delivery failure only logs a warning
+and marks the notification FAILED, never throws back to the caller.
+
+Called by:
+  - transaction-service -> POST /internal/notifications (best-effort,
+    after a successful transfer)
+
+==================================================================
+8. STATEMENT SERVICE - port 4007
+==================================================================
+
+Base path: none (mounted at root). Pure aggregator - no model, no
+repository, nothing persisted. Savings accounts only for v1 (no loan
+statements); CSV or JSON only (no PDF).
+
+  GET /health                                                NONE
+  GET /statements?accountNumber=&startDate=&endDate=&format=  Bearer   generates a statement (json or csv)
+                                                                        for the caller's own account over a
+                                                                        date range, with running balance and
+                                                                        summary; defaults to the current
+                                                                        calendar month if no dates given;
+                                                                        format=csv returns a raw file body,
+                                                                        bypassing the standard JSON envelope
+
+Outbound calls (sends x-internal-token):
+  - account-service: GET internal/accounts/:accountNumber,
+    GET internal/customer/accounts/:accountId/transactions
+    (hardcoded limit: 500, no pagination beyond that - see findings
+    report for the correctness implication on high-volume accounts)
+
+Called by: no other backend service.
+
+==================================================================
+CROSS-SERVICE CALL GRAPH
+==================================================================
+
+  Auth-services ────────────────► account-service ────────► Fineract
+  (enrollment only)
+
+  customer-profile-service ─────► account-service ────────► Fineract
+                            └────► kyc-service
+
+  transaction-service ──────────► account-service ────────► Fineract
+                       ├─────────► notification-service (best-effort)
+                       ├─────────► Fineract (deposit/withdrawal posting)
+                       └─────────► NIBSS (dummy adapter today)
+
+  beneficiary-service ──────────► account-service ────────► Fineract
+
+  statement-service ─────────────► account-service ────────► Fineract
+
+  notification-service ─────────► Gmail (SMTP) / Termii (SMS) [external, not platform services]
+
+  kyc-service ────────────────────► (no outbound calls; BVN/NIN providers mocked)
+
+  account-service ─────────────────► Fineract only; calls no other platform microservice
+
+Every arrow above is a plain REST/HTTP call authenticated (or not)
+per the tables in each service section - there is no message broker,
+no shared database, and no service reaches into another service's
+MongoDB collections anywhere in the platform.
+
+Auth boundary summary: every service verifies inbound user requests
+with the same shared JWT_SECRET (stateless, no call back to Auth
+Service needed). FIXED 2026-07-23 (previously: every service-to-service
+call landed on an UNAUTHENTICATED endpoint, relying entirely on
+network-level trust) - every /internal/* route on account-service and
+notification-service is now gated by internal-auth.middleware.js,
+checking a shared x-internal-token header (timing-safe compare
+against INTERNAL_SERVICE_TOKEN) that is identical across all 7
+backend services' .env files. Every outbound client that calls an
+internal route (Auth-services, customer-profile-service,
+transaction-service, beneficiary-service, statement-service ->
+account-service; transaction-service -> notification-service) sends
+this header. kyc-service exposes no /internal/* routes and is not
+part of this scheme; its public endpoints remain fully unauthenticated
+(see KYC SERVICE section above - intentionally deferred).

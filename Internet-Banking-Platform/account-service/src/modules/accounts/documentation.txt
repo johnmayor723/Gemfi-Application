@@ -1,0 +1,228 @@
+==================================================
+ACCOUNT SERVICE
+==================================================
+
+Module:
+Account
+
+Description:
+Maintains the relationship between customer NUBAN
+account numbers and Apache Fineract account IDs.
+
+Responsibilities
+
+- Account Number Mapping
+- Account Validation
+- Name Enquiry
+- Internal Account Lookup
+- Fineract Mapping
+- Account Synchronization
+
+Collection
+
+account_mappings
+
+Current Phase
+
+ACC-001
+✓ Account Mapping Schema
+
+Upcoming
+
+ACC-002 Repository
+
+ACC-003 Service
+
+ACC-004 Controller
+
+ACC-005 Routes
+
+ACC-006 Validation Endpoint
+
+ACC-007 Name Enquiry
+
+ACC-008 Internal APIs
+
+ACC-009 Unit Tests
+
+ACC-010 Integration Tests
+
+==================================================
+ACC-002
+Repository Layer
+==================================================
+
+Purpose
+
+Encapsulates all MongoDB operations.
+
+Methods
+
+create()
+
+findByAccountNumber()
+
+findByFineractAccountId()
+
+findByClientId()
+
+findByEmail()
+
+findByPhoneNumber()
+
+update()
+
+delete()
+
+existsByAccountNumber()
+
+existsByFineractAccountId()
+
+existsByEmail()
+
+existsByPhoneNumber()
+
+==================================================
+ACC-003
+Service Layer
+==================================================
+
+Responsibilities
+
+- Business Rules
+- Account Validation
+- Name Enquiry
+- Mapping Creation
+- Internal Lookups
+
+Dependencies
+
+- Account Repository
+
+Future Dependencies
+
+- Fineract Client
+
+
+==================================================
+ACC-004
+Validation Layer
+==================================================
+
+Validators
+
+✓ create-mapping.validator.js
+
+✓ validate-account.validator.js
+
+✓ name-enquiry.validator.js
+
+Responsibilities
+
+- Reject malformed requests
+- Validate account numbers
+- Validate email addresses
+- Validate phone numbers
+- Ensure required fields are present
+
+==================================================
+ACC-005
+Controller Layer
+==================================================
+
+Responsibilities
+
+- Receive HTTP requests
+- Call the service layer
+- Return standardized API responses
+- No business logic
+- No MongoDB queries
+
+
+==================================================
+ACC-006
+Routes
+==================================================
+
+Public
+
+POST /accounts/validate
+
+GET /accounts/name-enquiry/:accountNumber
+
+Internal
+
+POST /internal/accounts
+
+GET /internal/accounts/:accountNumber
+
+GET /internal/accounts/client/:clientId
+
+GET /internal/accounts/fineract/:fineractAccountId
+
+
+
+=====================================================
+ACC - 007 
+Tested endpoints
+=====================================================
+
+
+1. Account Synchronization (POST)
+Endpoint: POST http://localhost:4001/accounts/internal/accounts/sync
+
+JSON
+{
+  "success": true,
+  "message": "Account synchronized successfully.",
+  "data": {
+    "_id": "6a54cb97475cf23dee706b68",
+    "accountNumber": "2043451147",
+    "nuban": "2043451147",
+    "fineractAccountId": "8",
+    "fineractAccountNumber": "easy000000008",
+    "clientId": "11",
+    "displayName": "ade ola",
+    "firstName": "ade",
+    "middleName": null,
+    "lastName": "ola",
+    "phoneNumber": "090666621067",
+    "email": "ade@2io.io",
+    "status": "ACTIVE",
+    "createdAt": "2026-07-13T11:27:19.857Z",
+    "updatedAt": "2026-07-13T11:27:19.857Z",
+    "__v": 0
+  },
+  "meta": {
+    "timestamp": "2026-07-13T11:27:20.009Z"
+  }
+}
+2. Fetch Account Details By Account Number (GET)
+Endpoint: GET http://localhost:4001/accounts/internal/accounts/2043451147
+
+JSON
+{
+  "success": true,
+  "message": "Account retrieved successfully.",
+  "data": {
+    "_id": "6a54cb97475cf23dee706b68",
+    "accountNumber": "2043451147",
+    "nuban": "2043451147",
+    "fineractAccountId": "8",
+    "fineractAccountNumber": "easy000000008",
+    "clientId": "11",
+    "displayName": "ade ola",
+    "firstName": "ade",
+    "middleName": null,
+    "lastName": "ola",
+    "phoneNumber": "090666621067",
+    "email": "ade@2io.io",
+    "status": "ACTIVE",
+    "createdAt": "2026-07-13T11:27:19.857Z",
+    "updatedAt": "2026-07-13T11:27:19.857Z",
+    "__v": 0
+  },
+  "meta": {
+    "timestamp": "2026-07-13T11:30:23.331Z"
+  }
+}

@@ -1,0 +1,167 @@
+==================================================================
+BENEFICIARY SERVICE - API ENDPOINTS
+==================================================================
+
+Base URL   : http://<host>:<port>  (default port 4005)
+Mounting   : All routes are mounted at "/".
+
+Every response (success and error) is wrapped in the standard
+envelope:
+
+    Success:
+    {
+        "success": true,
+        "message": "",
+        "data": {},
+        "meta": { "timestamp": "" }
+    }
+
+    Error:
+    {
+        "success": false,
+        "message": "",
+        "error": { "code": "", "details": null },
+        "meta": { "timestamp": "", "correlationId": "" }
+    }
+
+Fields marked (required) must be present in the request body.
+Fields marked "Bearer <accessToken>" require the header:
+    Authorization: Bearer <accessToken>
+
+CORRELATION ID
+--------------
+Every response carries an X-Correlation-Id header (echoed from
+the request if you send one, otherwise generated).
+
+    X-Correlation-Id: <uuid>            (optional on request)
+
+No OTP and no Idempotency-Key are required anywhere in this
+service — saving/removing a beneficiary isn't money movement, so
+neither applies (both are scoped to the Transaction Service).
+
+==================================================================
+HEALTH
+==================================================================
+
+------------------------------------------------------------------
+GET /health
+------------------------------------------------------------------
+Auth        : None
+Body        : None
+
+Response data:
+{
+    "service": "<SERVICE_NAME>",
+    "version": "<SERVICE_VERSION>",
+    "environment": "<NODE_ENV>"
+}
+
+==================================================================
+BENEFICIARIES
+==================================================================
+
+------------------------------------------------------------------
+POST /beneficiaries
+------------------------------------------------------------------
+Auth        : Bearer <accessToken>
+Description : Saves a beneficiary. Type is inferred from whether
+              bankCode is supplied:
+              - No bankCode -> SAME_BANK. The account is verified
+                against Account Service (must exist and be
+                ACTIVE); accountName is ALWAYS overwritten with
+                the real value from there — anything sent in the
+                request body for accountName is ignored for
+                same-bank beneficiaries.
+              - bankCode supplied -> OTHER_BANK. No verification
+                is possible (no bank directory or real NIBSS
+                lookup exists in this platform yet) — bankName
+                and accountName are stored exactly as supplied,
+                unverified.
+              Rejects a duplicate {caller, accountNumber, bankCode}
+              combination.
+
+Request body (same-bank):
+{
+    "accountNumber": "2043451147",   // (required) exactly 10 digits
+    "nickname":       "Mom"          // optional, max 50 chars
+}
+
+Request body (other-bank):
+{
+    "accountNumber": "0123456789",   // (required) exactly 10 digits
+    "bankCode":       "058",         // (required for other-bank)
+    "bankName":       "GTBank",      // (required for other-bank)
+    "accountName":    "John Doe",    // (required for other-bank) unverified
+    "nickname":       "John"         // optional
+}
+
+Response data (201):
+{
+    "id": "<mongo id>",
+    "accountNumber": "2043451147",
+    "bankCode": null,
+    "bankName": null,
+    "accountName": "ade ola",        // real name from Account Service (same-bank)
+    "nickname": "Mom",
+    "type": "SAME_BANK",
+    "isFavorite": false,
+    "createdAt": "<ISO date>"
+}
+
+Possible errors:
+- 400 ValidationError    : bad payload (missing bankName/accountName for other-bank, etc.)
+- 404 NotFoundError      : same-bank account not found
+- 422 BusinessRuleError  : same-bank account not active
+- 409 ConflictError      : this beneficiary is already saved
+
+------------------------------------------------------------------
+GET /beneficiaries?page=&limit=&favorite=
+------------------------------------------------------------------
+Auth        : Bearer <accessToken>
+Description : Paginated beneficiary list for the caller, newest
+              first. Optional favorite=true|false filter.
+
+Response data:
+{
+    "beneficiaries": [ { ...same shape as POST response... } ],
+    "pagination": { "page": 1, "limit": 20, "total": 2 }
+}
+
+------------------------------------------------------------------
+GET /beneficiaries/:id
+------------------------------------------------------------------
+Auth        : Bearer <accessToken>
+Description : Retrieves a single beneficiary (must belong to the
+              caller).
+
+Response data: same shape as POST response.
+
+------------------------------------------------------------------
+PATCH /beneficiaries/:id
+------------------------------------------------------------------
+Auth        : Bearer <accessToken>
+Description : Updates nickname and/or isFavorite only.
+              accountNumber/bankCode/bankName/accountName are
+              immutable — delete and recreate the beneficiary to
+              change the underlying account, so it goes through
+              verification again rather than silently drifting
+              from what was originally checked.
+
+Request body:
+{
+    "nickname":   "Mother",   // optional, max 50 chars
+    "isFavorite": true        // optional boolean
+}
+
+Response data: the updated beneficiary, same shape as POST response.
+
+------------------------------------------------------------------
+DELETE /beneficiaries/:id
+------------------------------------------------------------------
+Auth        : Bearer <accessToken>
+Description : Removes a beneficiary (must belong to the caller).
+
+Response data:
+{
+    "deleted": true
+}
