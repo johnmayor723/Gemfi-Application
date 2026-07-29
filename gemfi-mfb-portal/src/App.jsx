@@ -56,6 +56,7 @@ import Reports from '@/pages/Reports';
 import AuditTrail from '@/pages/AuditTrail';
 import Compliance from '@/pages/Compliance';
 import KycDashboard from '@/pages/KycDashboard';
+import CommercialOfferings from '@/pages/CommercialOfferings';
 
 /**
  * This app connects directly to an external Fineract API.
@@ -115,6 +116,7 @@ const AuthenticatedApp = () => {
         <Route path="/audit-trail" element={<AuditTrail />} />
         <Route path="/compliance" element={<Compliance />} />
         <Route path="/kyc-dashboard" element={<KycDashboard />} />
+        <Route path="/commercial-offerings" element={<CommercialOfferings />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

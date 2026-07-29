@@ -6,7 +6,7 @@ import {
   ChevronRight, Package, Shield, Globe, DollarSign, FileText,
   Briefcase, FolderOpen, X, Menu, ArrowLeftRight, BarChart3, ShieldCheck,
   UserCheck, ScrollText, Database, ArrowDownLeft, ScanFace, Scale,
-  Wallet, PenSquare, Receipt, TrendingUp, Inbox
+  Wallet, PenSquare, Receipt, TrendingUp, Inbox, Sparkles
 } from 'lucide-react';
 import GemfiLogo from '@/components/fineract/GemfiLogo';
 
@@ -92,6 +92,12 @@ const navSections = [
     items: [
       { label: 'Connection', path: '/connection', icon: Settings },
       { label: 'API Explorer', path: '/api-explorer', icon: Terminal },
+    ]
+  },
+  {
+    label: 'Sales',
+    items: [
+      { label: 'Commercial Offerings', path: '/commercial-offerings', icon: Sparkles },
     ]
   }
 ];

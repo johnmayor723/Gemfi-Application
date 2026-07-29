@@ -1,48 +1,61 @@
-const express = require("express");
-const axios = require("axios");
+import express from "express";
+import cors from "cors";
+import { createProxyMiddleware } from "http-proxy-middleware";
 
 const app = express();
-const PORT = 4010;
+const PORT = 3100;
 
-const FINERACT_URL =
-  "https://155.117.183.133:8443/fineract-provider/api/v1/authentication";
+const FINERACT = "https://localhost:8444/fineract-provider";
 
-async function authenticateFineract() {
-  try {
-    const response = await axios.post(
-      FINERACT_URL,
-      {
-        username: "mifos",
-        password: "password",
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "Fineract-Platform-TenantId": "default",
-        },
-        httpsAgent: new (require("https").Agent)({
-          rejectUnauthorized: false, // same as curl -k
-        }),
-      }
-    );
+app.use(cors({ origin: true, credentials: true }));
 
-    console.log("✅ Fineract Auth Success:");
-    console.log(response.data);
-  } catch (error) {
-    console.error("❌ Fineract Auth Failed:");
+// =======================
+// REQUEST LOGGER
+// =======================
+app.use((req, res, next) => {
+  console.log("\n========================");
+  console.log("📥 REQUEST");
+  console.log(req.method, req.originalUrl);
+  console.log("========================\n");
 
-    if (error.response) {
-      console.error("Status:", error.response.status);
-      console.error("Data:", error.response.data);
-    } else {
-      console.error(error.message);
-    }
-  }
-}
+  next(); // IMPORTANT: allow forwarding
+});
 
-// Run auth immediately when server starts
-app.listen(PORT, async () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+// =======================
+// PROXY TO FINERACT
+// =======================
+app.use(
+  "/fineract-provider",
+  createProxyMiddleware({
+    target: FINERACT,
+    changeOrigin: true,
+    secure: false,
 
-  await authenticateFineract();
+    pathRewrite: {
+      "^/fineract-provider": "/fineract-provider",
+    },
+
+    onProxyReq: (proxyReq, req) => {
+      console.log("➡️ FORWARDING TO FINERACT:", req.originalUrl);
+
+      proxyReq.setHeader(
+        "Fineract-Platform-TenantId",
+        req.headers["fineract-platform-tenantid"] || "default"
+      );
+    },
+
+    onProxyRes: (proxyRes, req) => {
+      console.log("📤 RESPONSE:", req.method, req.originalUrl, proxyRes.statusCode);
+    },
+
+    onError: (err, req, res) => {
+      console.error("❌ PROXY ERROR:", err.message);
+      res.status(500).send("Proxy error");
+    },
+  })
+);
+
+// =======================
+app.listen(PORT, () => {
+  console.log(`Gateway running on http://localhost:${PORT}`);
 });

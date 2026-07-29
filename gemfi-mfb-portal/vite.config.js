@@ -15,5 +15,8 @@ export default defineConfig({
       visualEditAgent: true
     }),
     react(),
-  ]
+  ],
+  server: {
+    allowedHosts: ['demo.gemfitech.com'],
+  },
 });

@@ -1,5 +1,5 @@
 const KycProfile =
-require("../models/kycProfile");
+require("../models/KycProfile");
 
 
 class NextOfKinRepository {
