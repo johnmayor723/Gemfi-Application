@@ -110,6 +110,19 @@ const reject = [
 
 ];
 
+const setStatus = [
+
+    ...getById,
+
+    body("status")
+        .trim()
+        .notEmpty()
+        .withMessage("Status is required.")
+        .isIn(["active", "disabled"])
+        .withMessage("Status must be either 'active' or 'disabled'.")
+
+];
+
 module.exports = {
 
     submit,
@@ -122,6 +135,8 @@ module.exports = {
 
     update,
 
-    reject
+    reject,
+
+    setStatus
 
 };

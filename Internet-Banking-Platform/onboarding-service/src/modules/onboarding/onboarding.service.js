@@ -7,7 +7,11 @@ const {
     tenantProvisioner
 } = require("../../integrations/fineract");
 
+const mailClient = require("../../integrations/mail/mail.client");
+
 const { CLASSES: CHART_OF_ACCOUNTS } = require("./chart-of-accounts.seed");
+
+const { app: config, logger } = require("../../config");
 
 const {
     NotFoundError,
@@ -87,7 +91,7 @@ class OnboardingService {
 
         }
 
-        return repository.create({
+        const request = await repository.create({
 
             companyName: payload.companyName,
 
@@ -110,6 +114,52 @@ class OnboardingService {
             status: "pending"
 
         });
+
+        await this._sendWelcomeEmail(request);
+
+        return request;
+
+    }
+
+    /**
+     * ======================================================
+     * Welcome Email
+     * ----------------------------------------------------------
+     * Best-effort: the application is already saved by the
+     * time this runs, so a mail-service hiccup shouldn't fail
+     * the submission itself - it's logged and swallowed.
+     * ======================================================
+     */
+    async _sendWelcomeEmail(request) {
+
+        try {
+
+            await mailClient.sendOnboardingWelcome({
+
+                companyName: request.companyName,
+
+                email: request.contactEmail,
+
+                referenceId: request._id.toString(),
+
+                statusUrl: `${config.mail.statusUrlBase}/${request._id}`
+
+            });
+
+        } catch (error) {
+
+            logger.warn(
+
+                {
+                    error: { message: error.message },
+                    requestId: request._id.toString()
+                },
+
+                "Failed to send onboarding welcome email."
+
+            );
+
+        }
 
     }
 
@@ -329,6 +379,48 @@ class OnboardingService {
             reviewedAt: new Date(),
 
             rejectionReason: reason || null
+
+        });
+
+    }
+
+    /**
+     * ======================================================
+     * Admin: Enable / Disable
+     * ----------------------------------------------------------
+     * Toggles an already-provisioned tenant between active and
+     * disabled. This is GEMFI's own status table, not Fineract's
+     * - disabling never touches the underlying Fineract tenant,
+     * it only flips the flag every request checks.
+     * ======================================================
+     */
+    async setStatus(id, admin, status) {
+
+        const request = await this.getById(id);
+
+        if (request.status !== "active" && request.status !== "disabled") {
+
+            throw new ConflictError(
+                `Cannot change status of a request that is ${request.status}.`
+            );
+
+        }
+
+        if (request.status === status) {
+
+            throw new ConflictError(
+                `Tenant is already ${status}.`
+            );
+
+        }
+
+        return repository.update(id, {
+
+            status,
+
+            reviewedBy: admin.username,
+
+            reviewedAt: new Date()
 
         });
 

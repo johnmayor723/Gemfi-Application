@@ -223,6 +223,26 @@ const approve = async (req, res) => {
 
 };
 
+/**
+ * Admin Enable / Disable
+ *
+ * PATCH /admin/onboarding/requests/:id/status
+ */
+const setStatus = async (req, res) => {
+
+    const request = await service.setStatus(
+        req.params.id,
+        req.admin,
+        req.body.status
+    );
+
+    return success(res, {
+        message: `Tenant ${request.status}.`,
+        data: request
+    });
+
+};
+
 module.exports = {
 
     submit,
@@ -243,6 +263,8 @@ module.exports = {
 
     reject,
 
-    approve
+    approve,
+
+    setStatus
 
 };

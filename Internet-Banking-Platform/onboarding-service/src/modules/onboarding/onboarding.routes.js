@@ -141,4 +141,15 @@ router.post(
     controller.approve
 );
 
+/**
+ * Enable/disable an already-provisioned tenant.
+ */
+router.patch(
+    "/admin/onboarding/requests/:id/status",
+    adminAuth,
+    validator.setStatus,
+    validate,
+    controller.setStatus
+);
+
 module.exports = router;

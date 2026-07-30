@@ -97,6 +97,17 @@ const config = {
 
         dir: process.env.UPLOAD_DIR || "uploads"
 
+    },
+
+    mail: {
+
+        serviceUrl: process.env.MAIL_SERVICE_URL,
+
+        secret: process.env.MAIL_SERVICE_SECRET,
+
+        statusUrlBase:
+            process.env.ONBOARDING_STATUS_URL_BASE || "https://apply.gemfitech.com/status"
+
     }
 };
 

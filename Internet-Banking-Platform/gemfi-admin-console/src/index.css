@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 220 20% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 12%;
+    --primary: 177 100% 26%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 220 20% 96%;
+    --secondary-foreground: 220 20% 12%;
+    --muted: 220 20% 96%;
+    --muted-foreground: 220 10% 45%;
+    --accent: 24 100% 58%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+    --success: 152 60% 36%;
+    --success-foreground: 0 0% 98%;
+    --border: 220 15% 89%;
+    --input: 220 15% 89%;
+    --ring: 177 100% 26%;
+    --radius: 0.75rem;
+    --font-heading: ui-sans-serif, system-ui, sans-serif;
+    --font-body: ui-sans-serif, system-ui, sans-serif;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+  }
+
+  input, button, select, textarea {
+    @apply outline-none transition-colors;
+  }
+}
