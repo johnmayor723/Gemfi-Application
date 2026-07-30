@@ -28,13 +28,13 @@ export default function Notifications() {
         <div className="bg-white border rounded-2xl divide-y">
           {items.map(n => (
             <div key={n.id || n._id} className={`p-5 flex items-start gap-4 ${n.isRead ? '' : 'bg-[#f5faf8]'}`}>
-              <span className="w-10 h-10 shrink-0 rounded-xl bg-[#e7f4ef] text-[#006f51] grid place-items-center"><Bell size={18} /></span>
+              <span className="w-10 h-10 shrink-0 rounded-xl bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))] grid place-items-center"><Bell size={18} /></span>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm">{n.subject || n.type}</p>
                 <p className="text-sm text-slate-500 mt-1">{n.message}</p>
                 <p className="text-xs text-slate-400 mt-2">{n.createdAt ? new Date(n.createdAt).toLocaleString() : ''}</p>
               </div>
-              {!n.isRead && <button onClick={() => markRead(n)} className="shrink-0 flex items-center gap-1 text-xs font-semibold text-[#006f51] hover:underline"><Check size={14} />Mark read</button>}
+              {!n.isRead && <button onClick={() => markRead(n)} className="shrink-0 flex items-center gap-1 text-xs font-semibold text-[hsl(var(--primary))] hover:underline"><Check size={14} />Mark read</button>}
             </div>
           ))}
         </div>

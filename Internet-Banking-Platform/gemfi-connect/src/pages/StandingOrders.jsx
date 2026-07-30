@@ -61,7 +61,7 @@ export default function StandingOrders() {
     <>
       <div className="flex items-start justify-between gap-4">
         <PageHeader title="Standing orders" description="Automate recurring transfers." />
-        <button onClick={() => setShowForm(true)} className="shrink-0 mt-1 inline-flex items-center gap-2 bg-[#006f51] text-white rounded-xl px-4 py-2.5 text-sm font-semibold"><Plus size={17} />New standing order</button>
+        <button onClick={() => setShowForm(true)} className="shrink-0 mt-1 inline-flex items-center gap-2 bg-[hsl(var(--primary))] text-white rounded-xl px-4 py-2.5 text-sm font-semibold"><Plus size={17} />New standing order</button>
       </div>
 
       {error && <p className="bg-red-50 text-red-700 p-4 rounded-xl mb-4">{error}</p>}
@@ -90,14 +90,14 @@ export default function StandingOrders() {
                   <input maxLength={100} value={form.narration} onChange={e => setForm({ ...form, narration: e.target.value })} className="mt-2 w-full border rounded-xl px-4 py-3" />
                 </label>
                 {formError && <p className="text-sm text-red-600">{formError}</p>}
-                <button disabled={saving} className="w-full bg-[#006f51] text-white rounded-xl py-3 font-semibold disabled:opacity-60">{saving ? 'Submitting…' : 'Continue'}</button>
+                <button disabled={saving} className="w-full bg-[hsl(var(--primary))] text-white rounded-xl py-3 font-semibold disabled:opacity-60">{saving ? 'Submitting…' : 'Continue'}</button>
               </form>
             ) : (
               <div className="space-y-4">
                 <p className="text-sm text-slate-500">Enter the 6-digit code sent to you to activate this standing order.</p>
                 <input inputMode="numeric" maxLength={6} value={code} onChange={e => setCode(e.target.value.replace(/\D/g, ''))} className="w-full border rounded-xl px-4 py-3 tracking-widest text-center text-lg" placeholder="000000" />
                 {formError && <p className="text-sm text-red-600">{formError}</p>}
-                <button disabled={saving || code.length !== 6} onClick={confirm} className="w-full bg-[#006f51] text-white rounded-xl py-3 font-semibold disabled:opacity-60">{saving ? 'Confirming…' : 'Confirm'}</button>
+                <button disabled={saving || code.length !== 6} onClick={confirm} className="w-full bg-[hsl(var(--primary))] text-white rounded-xl py-3 font-semibold disabled:opacity-60">{saving ? 'Confirming…' : 'Confirm'}</button>
               </div>
             )}
           </div>
@@ -117,8 +117,8 @@ export default function StandingOrders() {
               <div className="flex items-center gap-3">
                 <span className="font-semibold text-sm">NGN {o.amount}</span>
                 <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${statusStyles[o.status] || 'bg-slate-100 text-slate-600'}`}>{o.status}</span>
-                {o.status === 'ACTIVE' && <button onClick={() => act(pauseStandingOrder, o.id)} aria-label="Pause" className="text-slate-400 hover:text-[#006f51]"><Pause size={17} /></button>}
-                {o.status === 'PAUSED' && <button onClick={() => act(resumeStandingOrder, o.id)} aria-label="Resume" className="text-slate-400 hover:text-[#006f51]"><Play size={17} /></button>}
+                {o.status === 'ACTIVE' && <button onClick={() => act(pauseStandingOrder, o.id)} aria-label="Pause" className="text-slate-400 hover:text-[hsl(var(--primary))]"><Pause size={17} /></button>}
+                {o.status === 'PAUSED' && <button onClick={() => act(resumeStandingOrder, o.id)} aria-label="Resume" className="text-slate-400 hover:text-[hsl(var(--primary))]"><Play size={17} /></button>}
                 {['ACTIVE', 'PAUSED'].includes(o.status) && <button onClick={() => act(cancelStandingOrder, o.id)} aria-label="Cancel" className="text-slate-400 hover:text-red-600"><Ban size={17} /></button>}
               </div>
             </div>

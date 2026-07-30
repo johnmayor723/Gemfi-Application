@@ -9,6 +9,7 @@ import {
   Wallet, PenSquare, Receipt, TrendingUp, Inbox, Sparkles
 } from 'lucide-react';
 import GemfiLogo from '@/components/fineract/GemfiLogo';
+import { useBranding } from '@/lib/branding';
 
 const navSections = [
   {
@@ -104,6 +105,7 @@ const navSections = [
 
 export default function Sidebar({ open, onClose }) {
   const location = useLocation();
+  const branding = useBranding();
   const [collapsed, setCollapsed] = React.useState({});
 
   const toggle = (label) => {
@@ -125,7 +127,7 @@ export default function Sidebar({ open, onClose }) {
           <div className="flex items-center gap-2.5">
             <GemfiLogo className="w-9 h-9 flex-shrink-0" />
             <div className="leading-tight">
-              <div className="text-base font-bold text-white tracking-tight">Gemfi MFB</div>
+              <div className="text-base font-bold text-white tracking-tight">{branding.companyName} MFB</div>
               <div className="text-[10px] text-slate-500 italic">...growing businesses</div>
             </div>
           </div>
@@ -187,7 +189,7 @@ export default function Sidebar({ open, onClose }) {
         </nav>
 
         <div className="p-4 border-t border-slate-800 text-[11px] text-slate-600">
-          Gemfi Microfinance Bank · Fineract Console
+          {branding.companyName} · Fineract Console
         </div>
       </aside>
     </>

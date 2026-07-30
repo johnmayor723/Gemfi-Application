@@ -4,10 +4,12 @@ import { Lock } from "lucide-react";
 import { resetPassword } from "@/api/auth.api";
 import Logo from "@/components/Logo";
 import bgImg from "@/assets/bg-img.jpg";
+import { useBranding } from "@/lib/branding";
 
 export default function ResetPassword() {
   const navigate = useNavigate();
   const location = useLocation();
+  const branding = useBranding();
   const [identifier, setIdentifier] = useState(location.state?.identifier || "");
   const [token, setToken] = useState("");
   const [password, setPassword] = useState("");
@@ -44,13 +46,13 @@ export default function ResetPassword() {
             <h1 className="text-4xl font-bold">Almost there</h1>
             <p className="mt-5 text-slate-300 max-w-md">Enter the code we sent you and choose a new password.</p>
           </div>
-          <p className="text-xs text-slate-500">Gemfi Microfinance Bank</p>
+          <p className="text-xs text-slate-500">{branding.companyName} Microfinance Bank</p>
         </div>
       </section>
       <section className="flex items-center justify-center p-6">
         <div className="w-full max-w-md">
           <Logo className="lg:hidden text-2xl mb-8" />
-          <span className="w-11 h-11 rounded-xl bg-[#e7f4ef] text-[#006f51] grid place-items-center"><Lock size={20} /></span>
+          <span className="w-11 h-11 rounded-xl bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))] grid place-items-center"><Lock size={20} /></span>
           <h2 className="text-2xl font-bold mt-4">Set new password</h2>
           <p className="text-slate-500 mt-1">Enter your reset code and choose a new password below.</p>
 
@@ -64,7 +66,7 @@ export default function ResetPassword() {
                 autoFocus
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
-                className="mt-2 w-full border rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-[#006f51]"
+                className="mt-2 w-full border rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-[hsl(var(--primary))]"
                 required
               />
             </label>
@@ -74,7 +76,7 @@ export default function ResetPassword() {
                 autoComplete="one-time-code"
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
-                className="mt-2 w-full border rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-[#006f51]"
+                className="mt-2 w-full border rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-[hsl(var(--primary))]"
                 placeholder="Code from your email"
                 required
               />
@@ -85,7 +87,7 @@ export default function ResetPassword() {
                 autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-2 w-full border rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-[#006f51]"
+                className="mt-2 w-full border rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-[hsl(var(--primary))]"
                 placeholder="••••••••"
                 required
               />
@@ -96,22 +98,22 @@ export default function ResetPassword() {
                 autoComplete="new-password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="mt-2 w-full border rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-[#006f51]"
+                className="mt-2 w-full border rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-[hsl(var(--primary))]"
                 placeholder="••••••••"
                 required
               />
             </label>
-            <button disabled={loading} className="w-full bg-[#ff832e] text-white font-semibold rounded-xl py-3.5 disabled:opacity-60">
+            <button disabled={loading} className="w-full bg-[hsl(var(--brand-secondary))] text-white font-semibold rounded-xl py-3.5 disabled:opacity-60">
               {loading ? "Resetting…" : "Reset password"}
             </button>
           </form>
 
           <p className="text-center text-sm text-slate-500 mt-6">
-            <Link to="/forgot-password" className="text-[#006f51] font-medium hover:underline">
+            <Link to="/forgot-password" className="text-[hsl(var(--primary))] font-medium hover:underline">
               Didn't get a code? Request another
             </Link>
             {" · "}
-            <Link to="/login" className="text-[#006f51] font-medium hover:underline">
+            <Link to="/login" className="text-[hsl(var(--primary))] font-medium hover:underline">
               Back to sign in
             </Link>
           </p>

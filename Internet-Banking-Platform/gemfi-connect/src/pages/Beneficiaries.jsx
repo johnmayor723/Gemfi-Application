@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { Plus, Star, Trash2, X, UserRound } from 'lucide-react';
 import { getBeneficiaries, createBeneficiary, updateBeneficiary, deleteBeneficiary } from '@/api/beneficiary.api';
 import PageHeader from '@/components/PageHeader';
+import { useBranding } from '@/lib/branding';
 
 const emptyForm = { accountNumber: '', bankCode: '', bankName: '', accountName: '', nickname: '' };
 
 export default function Beneficiaries() {
+  const branding = useBranding();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -45,7 +47,7 @@ export default function Beneficiaries() {
     <>
       <div className="flex items-start justify-between gap-4">
         <PageHeader title="Beneficiaries" description="Manage the accounts you send money to often." />
-        <button onClick={() => setShowForm(true)} className="shrink-0 mt-1 inline-flex items-center gap-2 bg-[#006f51] text-white rounded-xl px-4 py-2.5 text-sm font-semibold"><Plus size={17} />Add beneficiary</button>
+        <button onClick={() => setShowForm(true)} className="shrink-0 mt-1 inline-flex items-center gap-2 bg-[hsl(var(--primary))] text-white rounded-xl px-4 py-2.5 text-sm font-semibold"><Plus size={17} />Add beneficiary</button>
       </div>
 
       {error && <p className="bg-red-50 text-red-700 p-4 rounded-xl mb-4">{error}</p>}
@@ -72,7 +74,7 @@ export default function Beneficiaries() {
               <input maxLength={50} value={form.nickname} onChange={e => setForm({ ...form, nickname: e.target.value })} className="mt-2 w-full border rounded-xl px-4 py-3" placeholder="Optional" />
             </label>
             {formError && <p className="text-sm text-red-600">{formError}</p>}
-            <button disabled={saving} className="w-full bg-[#006f51] text-white rounded-xl py-3 font-semibold disabled:opacity-60">{saving ? 'Saving…' : 'Save beneficiary'}</button>
+            <button disabled={saving} className="w-full bg-[hsl(var(--primary))] text-white rounded-xl py-3 font-semibold disabled:opacity-60">{saving ? 'Saving…' : 'Save beneficiary'}</button>
           </form>
         </div>
       )}
@@ -84,15 +86,15 @@ export default function Beneficiaries() {
           {items.map(b => (
             <div key={b.id || b._id} className="bg-white border rounded-2xl p-5">
               <div className="flex justify-between items-start">
-                <span className="w-11 h-11 rounded-xl bg-[#e7f4ef] text-[#006f51] grid place-items-center"><UserRound size={20} /></span>
+                <span className="w-11 h-11 rounded-xl bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))] grid place-items-center"><UserRound size={20} /></span>
                 <div className="flex gap-1">
-                  <button onClick={() => toggleFavorite(b)} aria-label="Toggle favorite" className={b.isFavorite ? 'text-[#ff832e]' : 'text-slate-300 hover:text-[#ff832e]'}><Star size={18} fill={b.isFavorite ? 'currentColor' : 'none'} /></button>
+                  <button onClick={() => toggleFavorite(b)} aria-label="Toggle favorite" className={b.isFavorite ? 'text-[hsl(var(--brand-secondary))]' : 'text-slate-300 hover:text-[hsl(var(--brand-secondary))]'}><Star size={18} fill={b.isFavorite ? 'currentColor' : 'none'} /></button>
                   <button onClick={() => remove(b)} aria-label="Remove beneficiary" className="text-slate-300 hover:text-red-600"><Trash2 size={18} /></button>
                 </div>
               </div>
               <p className="font-bold mt-4">{b.nickname || b.accountName || 'Beneficiary'}</p>
               <p className="text-sm text-slate-500 mt-1">{b.accountNumber}</p>
-              <p className="text-xs text-slate-400 mt-1">{b.bankName || 'Gemfi Microfinance Bank'}</p>
+              <p className="text-xs text-slate-400 mt-1">{b.bankName || `${branding.companyName} Microfinance Bank`}</p>
             </div>
           ))}
         </div>

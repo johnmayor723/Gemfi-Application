@@ -47,7 +47,7 @@ export default function Settings() {
       <PageHeader title="Security" description="Manage your password and active sessions." />
       <div className="grid lg:grid-cols-2 gap-5">
         <section className="bg-white border rounded-2xl p-5">
-          <span className="w-11 h-11 rounded-xl bg-[#e7f4ef] text-[#006f51] grid place-items-center"><KeyRound size={19} /></span>
+          <span className="w-11 h-11 rounded-xl bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))] grid place-items-center"><KeyRound size={19} /></span>
           <h2 className="font-bold mt-4">Change password</h2>
           <p className="text-sm text-slate-500 mt-1">Choose a strong password you don't use elsewhere.</p>
           <form onSubmit={submitPassword} className="mt-5 space-y-3">
@@ -56,13 +56,13 @@ export default function Settings() {
             <input required type="password" autoComplete="new-password" placeholder="Confirm new password" value={form.confirmPassword} onChange={e => setForm({ ...form, confirmPassword: e.target.value })} className="w-full border rounded-xl px-4 py-2.5 text-sm" />
             {pwError && <p className="text-sm text-red-600">{pwError}</p>}
             {pwMessage && <p className="text-sm text-emerald-700">{pwMessage}</p>}
-            <button disabled={pwLoading} className="bg-[#006f51] text-white rounded-xl px-5 py-2.5 text-sm font-semibold disabled:opacity-60">{pwLoading ? 'Saving…' : 'Update password'}</button>
+            <button disabled={pwLoading} className="bg-[hsl(var(--primary))] text-white rounded-xl px-5 py-2.5 text-sm font-semibold disabled:opacity-60">{pwLoading ? 'Saving…' : 'Update password'}</button>
           </form>
         </section>
 
         <section className="bg-white border rounded-2xl p-5">
           <div className="flex items-center justify-between">
-            <span className="w-11 h-11 rounded-xl bg-[#e7f4ef] text-[#006f51] grid place-items-center"><Monitor size={19} /></span>
+            <span className="w-11 h-11 rounded-xl bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))] grid place-items-center"><Monitor size={19} /></span>
             <button onClick={handleLogoutAll} disabled={signingOutAll} className="flex items-center gap-1.5 text-sm font-semibold text-red-600 disabled:opacity-60"><LogOut size={15} />Sign out everywhere</button>
           </div>
           <h2 className="font-bold mt-4">Active sessions</h2>

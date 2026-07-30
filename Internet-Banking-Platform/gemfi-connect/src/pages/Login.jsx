@@ -4,9 +4,11 @@ import { LogIn } from "lucide-react";
 import { useBankAuth } from "@/auth/AuthProvider";
 import Logo from "@/components/Logo";
 import bgImg from "@/assets/bg-img.jpg";
+import { useBranding } from "@/lib/branding";
 
 export default function Login() {
   const { signIn, loading } = useBankAuth();
+  const branding = useBranding();
   const navigate = useNavigate();
   const location = useLocation();
   const [identifier, setIdentifier] = useState("");
@@ -35,13 +37,13 @@ export default function Login() {
             <h1 className="text-4xl font-bold">Welcome back</h1>
             <p className="mt-5 text-slate-300 max-w-md">Sign in to manage your accounts, send money, and track your activity — all in one place.</p>
           </div>
-          <p className="text-xs text-slate-500">Gemfi Microfinance Bank</p>
+          <p className="text-xs text-slate-500">{branding.companyName} Microfinance Bank</p>
         </div>
       </section>
       <section className="flex items-center justify-center p-6">
         <div className="w-full max-w-md">
           <Logo className="lg:hidden text-2xl mb-8" />
-          <span className="w-11 h-11 rounded-xl bg-[#e7f4ef] text-[#006f51] grid place-items-center"><LogIn size={20} /></span>
+          <span className="w-11 h-11 rounded-xl bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))] grid place-items-center"><LogIn size={20} /></span>
           <h2 className="text-2xl font-bold mt-4">Sign in</h2>
           <p className="text-slate-500 mt-1">Enter your details to access your internet banking account.</p>
 
@@ -55,7 +57,7 @@ export default function Login() {
                 autoFocus
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
-                className="mt-2 w-full border rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-[#006f51]"
+                className="mt-2 w-full border rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-[hsl(var(--primary))]"
                 placeholder="you@example.com"
                 required
               />
@@ -63,26 +65,26 @@ export default function Login() {
             <label className="block text-sm font-medium">
               <span className="flex items-center justify-between">
                 Password
-                <Link to="/forgot-password" className="text-xs text-[#006f51] font-medium hover:underline">Forgot password?</Link>
+                <Link to="/forgot-password" className="text-xs text-[hsl(var(--primary))] font-medium hover:underline">Forgot password?</Link>
               </span>
               <input
                 type="password"
                 autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-2 w-full border rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-[#006f51]"
+                className="mt-2 w-full border rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-[hsl(var(--primary))]"
                 placeholder="••••••••"
                 required
               />
             </label>
-            <button disabled={loading} className="w-full bg-[#ff832e] text-white font-semibold rounded-xl py-3.5 disabled:opacity-60">
+            <button disabled={loading} className="w-full bg-[hsl(var(--brand-secondary))] text-white font-semibold rounded-xl py-3.5 disabled:opacity-60">
               {loading ? "Signing in…" : "Sign in securely"}
             </button>
           </form>
 
           <p className="text-center text-sm text-slate-500 mt-6">
             New customer?{" "}
-            <Link to="/register" className="text-[#006f51] font-medium hover:underline">
+            <Link to="/register" className="text-[hsl(var(--primary))] font-medium hover:underline">
               Register for Internet Banking
             </Link>
           </p>

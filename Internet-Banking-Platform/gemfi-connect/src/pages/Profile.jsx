@@ -106,7 +106,7 @@ export default function Profile() {
                 ) : (
                   <form onSubmit={submitBvn} className="flex gap-2">
                     <input required maxLength={11} inputMode="numeric" placeholder="11-digit BVN" value={bvnValue} onChange={e => setBvnValue(e.target.value.replace(/\D/g, ''))} className="flex-1 border rounded-xl px-4 py-2.5 text-sm" />
-                    <button disabled={linking.bvn} className="bg-[#006f51] text-white rounded-xl px-4 text-sm font-semibold disabled:opacity-60">{linking.bvn ? 'Linking…' : 'Link BVN'}</button>
+                    <button disabled={linking.bvn} className="bg-[hsl(var(--primary))] text-white rounded-xl px-4 text-sm font-semibold disabled:opacity-60">{linking.bvn ? 'Linking…' : 'Link BVN'}</button>
                   </form>
                 )}
                 {kycError.bvn && <p className="text-sm text-red-600">{kycError.bvn}</p>}
@@ -119,7 +119,7 @@ export default function Profile() {
                 ) : (
                   <form onSubmit={submitNin} className="flex gap-2">
                     <input required maxLength={11} inputMode="numeric" placeholder="11-digit NIN" value={ninValue} onChange={e => setNinValue(e.target.value.replace(/\D/g, ''))} className="flex-1 border rounded-xl px-4 py-2.5 text-sm" />
-                    <button disabled={linking.nin} className="bg-[#006f51] text-white rounded-xl px-4 text-sm font-semibold disabled:opacity-60">{linking.nin ? 'Linking…' : 'Link NIN'}</button>
+                    <button disabled={linking.nin} className="bg-[hsl(var(--primary))] text-white rounded-xl px-4 text-sm font-semibold disabled:opacity-60">{linking.nin ? 'Linking…' : 'Link NIN'}</button>
                   </form>
                 )}
                 {kycError.nin && <p className="text-sm text-red-600">{kycError.nin}</p>}
@@ -134,11 +134,11 @@ export default function Profile() {
             </label>
             <label className="flex items-center justify-between border rounded-xl p-4">
               <span><b className="block text-sm">Notifications</b><small className="text-slate-500">Receive account activity updates</small></span>
-              <input type="checkbox" checked={Boolean(form.notificationsEnabled)} onChange={e => setForm({ ...form, notificationsEnabled: e.target.checked })} className="w-5 h-5 accent-[#006f51]" />
+              <input type="checkbox" checked={Boolean(form.notificationsEnabled)} onChange={e => setForm({ ...form, notificationsEnabled: e.target.checked })} className="w-5 h-5 accent-[hsl(var(--primary))]" />
             </label>
             {error && <p className="text-sm text-red-600">{error}</p>}
             {message && <p className="text-sm text-emerald-700">{message}</p>}
-            <button disabled={saving} className="bg-[#006f51] text-white rounded-xl px-6 py-3 disabled:opacity-50">{saving ? 'Saving…' : 'Save changes'}</button>
+            <button disabled={saving} className="bg-[hsl(var(--primary))] text-white rounded-xl px-6 py-3 disabled:opacity-50">{saving ? 'Saving…' : 'Save changes'}</button>
           </form>
         </>
       )}

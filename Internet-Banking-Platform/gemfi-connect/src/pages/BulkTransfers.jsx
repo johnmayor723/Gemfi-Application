@@ -70,7 +70,7 @@ export default function BulkTransfers() {
     <>
       <div className="flex items-start justify-between gap-4">
         <PageHeader title="Bulk transfers" description="Pay multiple beneficiaries in one batch." />
-        <button onClick={() => setShowForm(true)} className="shrink-0 mt-1 inline-flex items-center gap-2 bg-[#006f51] text-white rounded-xl px-4 py-2.5 text-sm font-semibold"><Plus size={17} />New batch</button>
+        <button onClick={() => setShowForm(true)} className="shrink-0 mt-1 inline-flex items-center gap-2 bg-[hsl(var(--primary))] text-white rounded-xl px-4 py-2.5 text-sm font-semibold"><Plus size={17} />New batch</button>
       </div>
 
       {error && <p className="bg-red-50 text-red-700 p-4 rounded-xl mb-4">{error}</p>}
@@ -91,20 +91,20 @@ export default function BulkTransfers() {
                     </div>
                   ))}
                 </div>
-                <button type="button" onClick={addRow} className="text-sm font-semibold text-[#006f51]">+ Add another beneficiary</button>
+                <button type="button" onClick={addRow} className="text-sm font-semibold text-[hsl(var(--primary))]">+ Add another beneficiary</button>
                 <label className="block text-sm font-medium">Batch narration
                   <input maxLength={100} value={narration} onChange={e => setNarration(e.target.value)} className="mt-2 w-full border rounded-xl px-4 py-3" placeholder="Optional" />
                 </label>
                 <div className="flex justify-between text-sm font-semibold bg-slate-50 rounded-xl p-3"><span>Total</span><span>NGN {total.toFixed(2)}</span></div>
                 {formError && <p className="text-sm text-red-600">{formError}</p>}
-                <button disabled={saving} className="w-full bg-[#006f51] text-white rounded-xl py-3 font-semibold disabled:opacity-60">{saving ? 'Submitting…' : 'Continue'}</button>
+                <button disabled={saving} className="w-full bg-[hsl(var(--primary))] text-white rounded-xl py-3 font-semibold disabled:opacity-60">{saving ? 'Submitting…' : 'Continue'}</button>
               </form>
             ) : (
               <div className="space-y-4">
                 <p className="text-sm text-slate-500">Enter the 6-digit code sent to you to confirm this batch.</p>
                 <input inputMode="numeric" maxLength={6} value={code} onChange={e => setCode(e.target.value.replace(/\D/g, ''))} className="w-full border rounded-xl px-4 py-3 tracking-widest text-center text-lg" placeholder="000000" />
                 {formError && <p className="text-sm text-red-600">{formError}</p>}
-                <button disabled={saving || code.length !== 6} onClick={confirm} className="w-full bg-[#006f51] text-white rounded-xl py-3 font-semibold disabled:opacity-60">{saving ? 'Confirming…' : 'Confirm'}</button>
+                <button disabled={saving || code.length !== 6} onClick={confirm} className="w-full bg-[hsl(var(--primary))] text-white rounded-xl py-3 font-semibold disabled:opacity-60">{saving ? 'Confirming…' : 'Confirm'}</button>
               </div>
             )}
           </div>

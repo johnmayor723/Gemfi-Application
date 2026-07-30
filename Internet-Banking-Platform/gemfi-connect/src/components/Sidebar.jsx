@@ -27,7 +27,7 @@ export default function Sidebar({ open, onClose }) {
       </div>
       <nav className="flex-1 overflow-y-auto p-3 space-y-1">
         {links.map(([label, to, Icon]) => (
-          <NavLink key={to} to={to} end={to === '/'} onClick={onClose} className={({ isActive }) => `flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition ${isActive ? 'bg-[#ff832e] text-white' : 'text-slate-300 hover:bg-white/10'}`}>
+          <NavLink key={to} to={to} end={to === '/'} onClick={onClose} className={({ isActive }) => `flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition ${isActive ? 'bg-[hsl(var(--brand-secondary))] text-white' : 'text-slate-300 hover:bg-white/10'}`}>
             <Icon size={19} />{label}
           </NavLink>
         ))}

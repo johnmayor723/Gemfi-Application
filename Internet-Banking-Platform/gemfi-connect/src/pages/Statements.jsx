@@ -52,7 +52,7 @@ export default function Statements() {
           <input type="date" value={form.endDate} onChange={e => setForm({ ...form, endDate: e.target.value })} className="mt-2 w-full border rounded-xl px-3 py-2.5" />
         </label>
         <div className="flex gap-2 items-end">
-          <button disabled={loading} className="flex-1 bg-[#006f51] text-white rounded-xl py-2.5 font-semibold disabled:opacity-60">{loading ? 'Loading…' : 'View'}</button>
+          <button disabled={loading} className="flex-1 bg-[hsl(var(--primary))] text-white rounded-xl py-2.5 font-semibold disabled:opacity-60">{loading ? 'Loading…' : 'View'}</button>
           <button type="button" onClick={download} disabled={downloading || !form.accountNumber} className="shrink-0 border rounded-xl px-3 py-2.5 disabled:opacity-60" aria-label="Download CSV"><Download size={18} /></button>
         </div>
       </form>

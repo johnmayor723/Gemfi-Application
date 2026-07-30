@@ -6,9 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import GemfiLogo from '@/components/fineract/GemfiLogo';
+import { useBranding } from '@/lib/branding';
 
 export default function Connection() {
   const navigate = useNavigate();
+  const branding = useBranding();
   const [form, setForm] = useState({
     baseUrl: import.meta.env.VITE_FINERACT_API_URL || '',
     tenantId: import.meta.env.VITE_FINERACT_TENANT_ID || 'default',
@@ -64,7 +66,7 @@ export default function Connection() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <GemfiLogo className="w-20 h-20 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-white">Gemfi Microfinance Bank</h1>
+          <h1 className="text-2xl font-bold text-white">{branding.companyName} Microfinance Bank</h1>
           <p className="text-sm text-slate-400 mt-2 italic">...growing businesses is our business</p>
         </div>
 

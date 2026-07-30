@@ -64,8 +64,8 @@ export default function Dashboard() {
         <BalanceCard availableBalance={primary?.availableBalance} ledgerBalance={primary?.ledgerBalance} currency={primary?.currency} />
         <div className="lg:col-span-2 grid grid-cols-3 gap-3">
           {[['Send money', '/transfers', Send], ['Pay bills', '/payments', ReceiptText], ['Profile', '/profile', UserRound]].map(([x, to, I]) => (
-            <Link key={to} to={to} className="bg-white border rounded-2xl p-4 flex flex-col justify-between hover:border-[#ff832e] transition">
-              <I className="text-[#006f51]" />
+            <Link key={to} to={to} className="bg-white border rounded-2xl p-4 flex flex-col justify-between hover:border-[hsl(var(--brand-secondary))] transition">
+              <I className="text-[hsl(var(--primary))]" />
               <span className="mt-6 text-sm font-semibold">{x}</span>
             </Link>
           ))}
@@ -75,7 +75,7 @@ export default function Dashboard() {
       <section className="mt-8">
         <div className="flex justify-between mb-4">
           <h2 className="text-lg font-bold">Your accounts</h2>
-          <Link to="/accounts" className="text-sm text-[#006f51] flex gap-1">View all <ArrowRight size={16} /></Link>
+          <Link to="/accounts" className="text-sm text-[hsl(var(--primary))] flex gap-1">View all <ArrowRight size={16} /></Link>
         </div>
         {loading ? (
           <div className="h-44 bg-slate-100 animate-pulse rounded-2xl" />
@@ -90,7 +90,7 @@ export default function Dashboard() {
 
       <section className="mt-8 bg-white border rounded-2xl p-5">
         <div className="flex items-center gap-3 mb-4">
-          <span className="w-11 h-11 rounded-xl bg-[#e7f4ef] text-[#006f51] grid place-items-center"><ShieldCheck size={19} /></span>
+          <span className="w-11 h-11 rounded-xl bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))] grid place-items-center"><ShieldCheck size={19} /></span>
           <div>
             <h2 className="text-lg font-bold">Identity verification</h2>
             <p className="text-sm text-slate-500">BVN and NIN status</p>
@@ -121,7 +121,7 @@ export default function Dashboard() {
       <section className="mt-8 bg-white border rounded-2xl p-5">
         <div className="flex justify-between mb-3">
           <h2 className="text-lg font-bold">Recent transactions</h2>
-          <Link to="/transactions" className="text-sm text-[#006f51]">View all</Link>
+          <Link to="/transactions" className="text-sm text-[hsl(var(--primary))]">View all</Link>
         </div>
         <TransactionTable transactions={transactions} loading={loading} />
       </section>

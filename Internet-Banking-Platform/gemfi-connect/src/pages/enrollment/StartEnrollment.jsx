@@ -5,9 +5,11 @@ import { startEnrollment } from '@/api/enrollment.api';
 import EnrollmentProgress from '@/components/EnrollmentProgress';
 import Logo from '@/components/Logo';
 import bgImg from '@/assets/bg-img.jpg';
+import { useBranding } from '@/lib/branding';
 
 export default function StartEnrollment() {
   const navigate = useNavigate();
+  const branding = useBranding();
   const [form, setForm] = useState({ accountNumber: '', email: '', phoneNumber: '' });
   const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState('');
@@ -49,35 +51,35 @@ export default function StartEnrollment() {
             <h1 className="text-4xl font-bold">Activate Internet Banking</h1>
             <p className="mt-5 text-slate-300 max-w-md">Existing customers can self-enroll in a few simple steps and start banking online today.</p>
           </div>
-          <p className="text-xs text-slate-500">Gemfi Microfinance Bank</p>
+          <p className="text-xs text-slate-500">{branding.companyName} Microfinance Bank</p>
         </div>
       </section>
       <section className="flex items-center justify-center p-6">
         <div className="w-full max-w-md">
           <Logo className="lg:hidden text-2xl mb-8"/>
           <EnrollmentProgress current={0}/>
-          <span className="w-11 h-11 rounded-xl bg-[#e7f4ef] text-[#006f51] grid place-items-center"><ShieldCheck/></span>
+          <span className="w-11 h-11 rounded-xl bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))] grid place-items-center"><ShieldCheck/></span>
           <h2 className="text-2xl font-bold mt-4">Verify your account</h2>
           <p className="text-slate-500 mt-1">Enter your account details to begin enrollment.</p>
           {apiError && <p className="mt-5 text-sm text-red-600 bg-red-50 p-3 rounded-lg">{apiError}</p>}
           <form onSubmit={submit} className="mt-6 space-y-4">
             <label className="block text-sm font-medium">Account number
-              <input inputMode="numeric" maxLength={10} value={form.accountNumber} onChange={e => setForm({ ...form, accountNumber: e.target.value.replace(/\D/g, '') })} className="mt-2 w-full border rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-[#006f51]" placeholder="10-digit account number"/>
+              <input inputMode="numeric" maxLength={10} value={form.accountNumber} onChange={e => setForm({ ...form, accountNumber: e.target.value.replace(/\D/g, '') })} className="mt-2 w-full border rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-[hsl(var(--primary))]" placeholder="10-digit account number"/>
               {errors.accountNumber && <span className="text-xs text-red-600 mt-1 block">{errors.accountNumber}</span>}
             </label>
             <label className="block text-sm font-medium">Email address
-              <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className="mt-2 w-full border rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-[#006f51]" placeholder="you@email.com"/>
+              <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className="mt-2 w-full border rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-[hsl(var(--primary))]" placeholder="you@email.com"/>
               {errors.email && <span className="text-xs text-red-600 mt-1 block">{errors.email}</span>}
             </label>
             <label className="block text-sm font-medium">Phone number
-              <input inputMode="tel" value={form.phoneNumber} onChange={e => setForm({ ...form, phoneNumber: e.target.value })} className="mt-2 w-full border rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-[#006f51]" placeholder="08012345678"/>
+              <input inputMode="tel" value={form.phoneNumber} onChange={e => setForm({ ...form, phoneNumber: e.target.value })} className="mt-2 w-full border rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-[hsl(var(--primary))]" placeholder="08012345678"/>
               {errors.phoneNumber && <span className="text-xs text-red-600 mt-1 block">{errors.phoneNumber}</span>}
             </label>
-            <button disabled={loading} className="w-full bg-[#ff832e] text-white font-semibold rounded-xl py-3.5 disabled:opacity-60">{loading ? 'Sending OTPs…' : 'Continue'}</button>
+            <button disabled={loading} className="w-full bg-[hsl(var(--brand-secondary))] text-white font-semibold rounded-xl py-3.5 disabled:opacity-60">{loading ? 'Sending OTPs…' : 'Continue'}</button>
           </form>
           <p className="text-center text-sm text-slate-500 mt-6">
             Already have an account?{' '}
-            <Link to="/login" className="text-[#006f51] font-medium hover:underline">
+            <Link to="/login" className="text-[hsl(var(--primary))] font-medium hover:underline">
               Sign in
             </Link>
           </p>

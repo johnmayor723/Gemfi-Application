@@ -3,9 +3,11 @@ import { Outlet, Navigate } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import Sidebar from './Sidebar';
 import { isConfigured } from '@/lib/fineract';
+import { useBranding } from '@/lib/branding';
 
 export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const branding = useBranding();
   const urlParams = new URLSearchParams(window.location.search);
 
   if (!isConfigured()) {
@@ -20,7 +22,7 @@ export default function AppLayout() {
           <button onClick={() => setSidebarOpen(true)} className="text-slate-400 hover:text-white">
             <Menu className="w-5 h-5" />
           </button>
-          <span className="font-semibold text-sm">Gemfi MFB Console</span>
+          <span className="font-semibold text-sm">{branding.companyName} MFB Console</span>
         </header>
         <main className="flex-1 overflow-y-auto">
           <Outlet />
