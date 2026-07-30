@@ -56,3 +56,36 @@ exports.update = asyncHandler(async (req, res) => {
     );
 
 });
+
+exports.approve = asyncHandler(async (req, res) => {
+
+    const profile =
+        await kycService.approve(
+            req.params.customerId,
+            req.admin
+        );
+
+    return success(
+        res,
+        profile,
+        "KYC profile approved"
+    );
+
+});
+
+exports.reject = asyncHandler(async (req, res) => {
+
+    const profile =
+        await kycService.reject(
+            req.params.customerId,
+            req.admin,
+            req.body?.reason
+        );
+
+    return success(
+        res,
+        profile,
+        "KYC profile rejected"
+    );
+
+});

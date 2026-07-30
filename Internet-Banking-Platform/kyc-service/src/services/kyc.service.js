@@ -1,5 +1,6 @@
 const repository = require("../repositories/kyc.repository");
 const ApiError = require("../utils/ApiError");
+const auditService = require("./audit.service");
 
 /**
  * No field is safe to accept through this generic, unauthenticated
@@ -66,6 +67,107 @@ class KycService {
             );
 
         }
+
+        return profile;
+
+    }
+
+    async approve(customerId, admin) {
+
+        const profile =
+            await repository.findByCustomerId(customerId);
+
+        if (!profile) {
+
+            throw new ApiError(
+                404,
+                "KYC profile not found."
+            );
+
+        }
+
+        if (profile.status === "Verified") {
+
+            throw new ApiError(
+                409,
+                "KYC profile is already verified."
+            );
+
+        }
+
+        profile.status = "Verified";
+
+        await profile.save();
+
+        await auditService.log({
+
+            customerId,
+
+            module: "KYC",
+
+            action: "APPROVE",
+
+            status: "SUCCESS",
+
+            description: `KYC profile approved by ${admin.username}.`,
+
+            performedBy: admin.username,
+
+            metadata: {
+
+                staffDisplayName: admin.staffDisplayName || null
+
+            }
+
+        });
+
+        return profile;
+
+    }
+
+    async reject(customerId, admin, reason) {
+
+        const profile =
+            await repository.findByCustomerId(customerId);
+
+        if (!profile) {
+
+            throw new ApiError(
+                404,
+                "KYC profile not found."
+            );
+
+        }
+
+        profile.status = "Rejected";
+
+        await profile.save();
+
+        await auditService.log({
+
+            customerId,
+
+            module: "KYC",
+
+            action: "REJECT",
+
+            status: "SUCCESS",
+
+            description: reason
+                ? `KYC profile rejected by ${admin.username}: ${reason}`
+                : `KYC profile rejected by ${admin.username}.`,
+
+            performedBy: admin.username,
+
+            metadata: {
+
+                staffDisplayName: admin.staffDisplayName || null,
+
+                reason: reason || null
+
+            }
+
+        });
 
         return profile;
 

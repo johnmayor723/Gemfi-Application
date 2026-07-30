@@ -44,6 +44,29 @@ router.patch(
     "/customers/:customerId/kyc",
     controller.update
 );
+
+/**
+ * ==========================================================
+ * KYC Approval
+ * ==========================================================
+ */
+
+/**
+ * Approve KYC profile.
+ */
+router.post(
+    "/customers/:customerId/kyc/approve",
+    controller.approve
+);
+
+/**
+ * Reject KYC profile.
+ */
+router.post(
+    "/customers/:customerId/kyc/reject",
+    controller.reject
+);
+
 /**
  * ==========================================================
  * Passport Photograph

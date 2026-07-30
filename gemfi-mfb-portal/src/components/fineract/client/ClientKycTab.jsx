@@ -78,7 +78,7 @@ export default function ClientKycTab({ clientId }) {
       </TabsList>
 
       <TabsContent value="dashboard" className="mt-4 space-y-4">
-        <IdentityStatus kyc={kyc} status={status} />
+        <IdentityStatus kyc={kyc} status={status} clientId={clientId} onChanged={load} />
         <PhotoSignature clientId={clientId} photo={kyc?.photo} signature={kyc?.signature} onChanged={load} />
       </TabsContent>
 

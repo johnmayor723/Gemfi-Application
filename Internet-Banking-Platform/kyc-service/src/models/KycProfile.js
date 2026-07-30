@@ -53,6 +53,59 @@ const VerificationSchema = new mongoose.Schema(
         sanctionsChecked: {
             type: Boolean,
             default: false
+        },
+
+        identityVerified: {
+            type: Boolean,
+            default: false
+        }
+
+    },
+    {
+        _id: false
+    }
+);
+
+/**
+ * ==========================================================
+ * Identity Verification Schema (Didit)
+ * ----------------------------------------------------------
+ * Tracks the latest Didit hosted-verification session for
+ * this customer. decision is the raw V3 decision object as
+ * received on the signed webhook - stored as-is rather than
+ * re-shaped, since its structure is provider-defined.
+ * ==========================================================
+ */
+const IdentityVerificationSchema = new mongoose.Schema(
+    {
+        provider: {
+            type: String,
+            default: "didit"
+        },
+
+        sessionId: {
+            type: String,
+            default: null
+        },
+
+        status: {
+            type: String,
+            default: null
+        },
+
+        decision: {
+            type: mongoose.Schema.Types.Mixed,
+            default: null
+        },
+
+        createdAt: {
+            type: Date,
+            default: null
+        },
+
+        verifiedAt: {
+            type: Date,
+            default: null
         }
 
     },
@@ -340,6 +393,150 @@ const NinSchema = new mongoose.Schema(
 
 /**
  * ==========================================================
+ * Credit Check Schema
+ * ==========================================================
+ */
+const CreditCheckSchema = new mongoose.Schema(
+    {
+        provider: String,
+
+        reference: String,
+
+        checked: {
+            type: Boolean,
+            default: false
+        },
+
+        score: {
+            type: Number,
+            default: null
+        },
+
+        rating: {
+            type: String,
+            default: null
+        },
+
+        checkedAt: {
+            type: Date,
+            default: null
+        }
+
+    },
+    {
+        _id: false
+    }
+);
+
+/**
+ * ==========================================================
+ * AML Check Schema
+ * ==========================================================
+ */
+const AmlCheckSchema = new mongoose.Schema(
+    {
+        provider: String,
+
+        reference: String,
+
+        checked: {
+            type: Boolean,
+            default: false
+        },
+
+        matched: {
+            type: Boolean,
+            default: false
+        },
+
+        riskLevel: {
+            type: String,
+            default: null
+        },
+
+        matches: [String],
+
+        checkedAt: {
+            type: Date,
+            default: null
+        }
+
+    },
+    {
+        _id: false
+    }
+);
+
+/**
+ * ==========================================================
+ * PEP Check Schema
+ * ==========================================================
+ */
+const PepCheckSchema = new mongoose.Schema(
+    {
+        provider: String,
+
+        reference: String,
+
+        checked: {
+            type: Boolean,
+            default: false
+        },
+
+        matched: {
+            type: Boolean,
+            default: false
+        },
+
+        matches: [String],
+
+        checkedAt: {
+            type: Date,
+            default: null
+        }
+
+    },
+    {
+        _id: false
+    }
+);
+
+/**
+ * ==========================================================
+ * Sanctions Check Schema
+ * ==========================================================
+ */
+const SanctionsCheckSchema = new mongoose.Schema(
+    {
+        provider: String,
+
+        reference: String,
+
+        checked: {
+            type: Boolean,
+            default: false
+        },
+
+        matched: {
+            type: Boolean,
+            default: false
+        },
+
+        lists: [String],
+
+        checkedAt: {
+            type: Date,
+            default: null
+        }
+
+    },
+    {
+        _id: false
+    }
+);
+
+/**
+ * ==========================================================
  * KYC Profile Schema
  * ==========================================================
  */
@@ -438,6 +635,46 @@ const KycProfileSchema = new mongoose.Schema(
          */
         verification: {
             type: VerificationSchema,
+            default: () => ({})
+        },
+
+        /**
+         * Identity Verification (Didit)
+         */
+        identityVerification: {
+            type: IdentityVerificationSchema,
+            default: () => ({})
+        },
+
+        /**
+         * Credit Check
+         */
+        creditCheck: {
+            type: CreditCheckSchema,
+            default: () => ({})
+        },
+
+        /**
+         * AML Screening
+         */
+        aml: {
+            type: AmlCheckSchema,
+            default: () => ({})
+        },
+
+        /**
+         * PEP Screening
+         */
+        pep: {
+            type: PepCheckSchema,
+            default: () => ({})
+        },
+
+        /**
+         * Sanctions Screening
+         */
+        sanctions: {
+            type: SanctionsCheckSchema,
             default: () => ({})
         }
 

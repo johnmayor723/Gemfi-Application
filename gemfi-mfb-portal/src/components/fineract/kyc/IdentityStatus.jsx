@@ -2,6 +2,7 @@ import React from 'react';
 import { Fingerprint, IdCard, BadgeCheck, Calendar, UserCog } from 'lucide-react';
 import KycCard from './KycCard';
 import KycStatusBadge from './KycStatusBadge';
+import KycApprovalActions from './KycApprovalActions';
 
 function StatusRow({ icon: Icon, label, value }) {
   return (
@@ -15,10 +16,15 @@ function StatusRow({ icon: Icon, label, value }) {
   );
 }
 
-export default function IdentityStatus({ kyc, status }) {
+export default function IdentityStatus({ kyc, status, clientId, onChanged }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <KycCard title="Identity Status" icon={BadgeCheck} status={kyc?.status}>
+      <KycCard
+        title="Identity Status"
+        icon={BadgeCheck}
+        status={kyc?.status}
+        actions={<KycApprovalActions clientId={clientId} status={kyc?.status} onChanged={onChanged} />}
+      >
         <StatusRow icon={Fingerprint} label="BVN Verification" value={<KycStatusBadge status={kyc?.bvn?.status || 'pending'} />} />
         <StatusRow icon={IdCard} label="NIN Verification" value={<KycStatusBadge status={kyc?.nin?.status || 'pending'} />} />
         <StatusRow icon={BadgeCheck} label="KYC Level" value={kyc?.kycLevel || '—'} />
