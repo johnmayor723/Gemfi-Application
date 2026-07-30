@@ -2,10 +2,12 @@ import { createContext, useContext, useEffect, useState, createElement } from 'r
 
 /**
  * Hostnames that ARE the GemFi platform itself, not a tenant.
- * These always render the bundled static GemFi identity - no
- * branding fetch is even attempted, so there's no risk of a
- * slow/broken onboarding-service call affecting GemFi's own
- * app.
+ * These are the ONLY place the bundled GemFi identity (logo,
+ * "Gemfi" name) is allowed to render. A white-labeled tenant's
+ * customers must never see GemFi's brand under any
+ * circumstance - not on a slow network, not on an outage, not
+ * on a typo'd subdomain. See NEUTRAL_STATE below for what every
+ * other hostname falls back to instead.
  */
 const GEMFI_PLATFORM_HOSTS = [
   'demo.gemfitech.com',
@@ -16,25 +18,67 @@ const GEMFI_PLATFORM_HOSTS = [
   '127.0.0.1',
 ];
 
-const STATIC_DEFAULT = {
+const GEMFI_STATIC = {
   companyName: 'Gemfi',
-  logoUrl: null, // null means "use the bundled asset", set by each app's Logo component
+  logoUrl: null, // null + isDynamic:false + isResolving:false => bundled GemFi asset
   primaryColor: null,
   secondaryColor: null,
   isDynamic: false,
+  isResolving: false,
+};
+
+/**
+ * The "we don't yet (or don't ever) know this tenant's brand"
+ * state - deliberately blank, not GemFi. Used for a genuinely
+ * unrecognized subdomain (404), a network/server error before
+ * retries exhaust, and while an initial fetch is in flight.
+ * Components render a neutral placeholder for this, never the
+ * GemFi logo/name - see Logo.jsx.
+ */
+const NEUTRAL_STATE = {
+  companyName: '',
+  logoUrl: null,
+  primaryColor: null,
+  secondaryColor: null,
+  isDynamic: false,
+  isResolving: true,
 };
 
 const ONBOARDING_BASE = import.meta.env.VITE_ONBOARDING_SERVICE_URL || 'https://api.gemfitech.com';
+const CACHE_PREFIX = 'gemfi_branding_cache:';
+const RETRY_DELAYS_MS = [1000, 2000, 4000];
+const BACKGROUND_RETRY_MS = 10000;
+const BACKGROUND_RETRY_ATTEMPTS = 6;
+
+function isPlatformHost(hostname) {
+  return GEMFI_PLATFORM_HOSTS.includes(hostname);
+}
 
 /**
  * The tenant subdomain is just the leftmost hostname label -
  * matches how onboarding-service derives `subdomain` from the
- * company name at submission time. A platform host never
- * reaches this - see GEMFI_PLATFORM_HOSTS above.
+ * company name at submission time.
  */
 function subdomainFromHostname(hostname) {
   const label = hostname.split('.')[0];
   return label || null;
+}
+
+function readCache(subdomain) {
+  try {
+    const raw = localStorage.getItem(CACHE_PREFIX + subdomain);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCache(subdomain, tenant) {
+  try {
+    localStorage.setItem(CACHE_PREFIX + subdomain, JSON.stringify(tenant));
+  } catch {
+    // localStorage unavailable/full - caching is a nice-to-have, not required
+  }
 }
 
 function hexToHslTriplet(hex) {
@@ -72,14 +116,11 @@ function hexToHslTriplet(hex) {
  * index.css, so this is mode-independent by construction.
  *
  * primaryColor -> --primary/--ring/--sidebar-ring (this app's
- * light-mode --primary IS the brand teal by default, unlike
- * the mfb-portal's neutral-black light primary).
+ * light-mode --primary IS the brand teal by default).
  *
  * secondaryColor -> a dedicated --brand-secondary var, NOT
  * --accent - --accent already drives ~40 shadcn/ui primitives'
- * hover/surface states across this app, and repurposing it for
- * a tenant's CTA-orange would visually break dropdowns, menus,
- * and toggles in ways unrelated to branding.
+ * hover/surface states across this app.
  */
 function applyBrandColors(primaryColor, secondaryColor) {
   const root = document.documentElement;
@@ -103,50 +144,105 @@ function clearBrandColors() {
   );
 }
 
-const BrandingContext = createContext(STATIC_DEFAULT);
+/**
+ * Fetches branding for a subdomain, retrying only on network
+ * failures / non-404 error responses (a 404 is a definitive
+ * "no such tenant" answer - retrying it can't help). Returns
+ * `{ status: 'found', tenant }`, `{ status: 'not-found' }`, or
+ * `{ status: 'error' }` once retries are exhausted.
+ */
+async function fetchBranding(subdomain, { retries = RETRY_DELAYS_MS.length } = {}) {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      const res = await fetch(`${ONBOARDING_BASE}/branding/${encodeURIComponent(subdomain)}`);
+      if (res.status === 404) return { status: 'not-found' };
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const body = await res.json().catch(() => null);
+      if (!body?.data) throw new Error('Malformed branding response');
+      return {
+        status: 'found',
+        tenant: {
+          companyName: body.data.companyName || '',
+          logoUrl: body.data.logoUrl ? `${ONBOARDING_BASE}${body.data.logoUrl}` : null,
+          primaryColor: body.data.primaryColor || null,
+          secondaryColor: body.data.secondaryColor || null,
+        },
+      };
+    } catch {
+      if (attempt >= retries) return { status: 'error' };
+      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS_MS[attempt] || RETRY_DELAYS_MS.at(-1)));
+    }
+  }
+}
+
+const BrandingContext = createContext(GEMFI_STATIC);
 
 export function BrandingProvider({ children }) {
-  const [branding, setBranding] = useState(STATIC_DEFAULT);
+  const hostname = window.location.hostname;
+  const [branding, setBranding] = useState(() => (isPlatformHost(hostname) ? GEMFI_STATIC : NEUTRAL_STATE));
 
   useEffect(() => {
-    const hostname = window.location.hostname;
-
-    if (GEMFI_PLATFORM_HOSTS.includes(hostname)) {
-      return; // stays STATIC_DEFAULT - this is GemFi's own domain, not a tenant
-    }
+    if (isPlatformHost(hostname)) return; // GEMFI_STATIC is correct and final - no fetch needed
 
     const subdomain = subdomainFromHostname(hostname);
     if (!subdomain) return;
 
     let cancelled = false;
+    let backgroundTimer = null;
 
-    fetch(`${ONBOARDING_BASE}/branding/${encodeURIComponent(subdomain)}`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((body) => {
-        if (cancelled || !body?.data) return; // 404 or malformed - fall back to static, silently
-        const tenant = {
-          companyName: body.data.companyName || STATIC_DEFAULT.companyName,
-          logoUrl: body.data.logoUrl ? `${ONBOARDING_BASE}${body.data.logoUrl}` : null,
-          primaryColor: body.data.primaryColor || null,
-          secondaryColor: body.data.secondaryColor || null,
-          isDynamic: true,
-        };
-        setBranding(tenant);
-        applyBrandColors(tenant.primaryColor, tenant.secondaryColor);
-      })
-      .catch(() => {
-        // Network error, onboarding-service down, etc. - stay on
-        // STATIC_DEFAULT rather than leaving the app unbranded.
-      });
+    const settle = (tenant) => {
+      if (cancelled) return;
+      setBranding({ ...tenant, isDynamic: true, isResolving: false });
+      applyBrandColors(tenant.primaryColor, tenant.secondaryColor);
+      writeCache(subdomain, tenant);
+    };
+
+    const fallBackOrRetryInBackground = () => {
+      if (cancelled) return;
+      const cached = readCache(subdomain);
+      if (cached) {
+        // Stale-but-real tenant branding beats showing no brand at all.
+        setBranding({ ...cached, isDynamic: true, isResolving: false });
+        applyBrandColors(cached.primaryColor, cached.secondaryColor);
+        return;
+      }
+      setBranding(NEUTRAL_STATE);
+      scheduleBackgroundRetry(1);
+    };
+
+    const scheduleBackgroundRetry = (attempt) => {
+      if (cancelled || attempt > BACKGROUND_RETRY_ATTEMPTS) return;
+      backgroundTimer = setTimeout(async () => {
+        if (cancelled) return;
+        const result = await fetchBranding(subdomain, { retries: 0 });
+        if (cancelled) return;
+        if (result.status === 'found') {
+          settle(result.tenant);
+        } else {
+          scheduleBackgroundRetry(attempt + 1);
+        }
+      }, BACKGROUND_RETRY_MS);
+    };
+
+    fetchBranding(subdomain).then((result) => {
+      if (cancelled) return;
+      if (result.status === 'found') settle(result.tenant);
+      else fallBackOrRetryInBackground();
+    });
 
     return () => {
       cancelled = true;
+      if (backgroundTimer) clearTimeout(backgroundTimer);
       clearBrandColors();
     };
   }, []);
 
   useEffect(() => {
-    document.title = branding.isDynamic ? `${branding.companyName} Connect` : 'Gemfi Connect';
+    document.title = branding.isDynamic
+      ? `${branding.companyName} Connect`
+      : isPlatformHost(hostname)
+        ? 'Gemfi Connect'
+        : 'Loading…';
   }, [branding]);
 
   return createElement(BrandingContext.Provider, { value: branding }, children);
