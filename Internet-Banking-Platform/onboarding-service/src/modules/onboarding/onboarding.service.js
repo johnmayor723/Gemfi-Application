@@ -3,6 +3,13 @@ const crypto = require("node:crypto");
 const repository = require("./onboarding.repository");
 
 const {
+    client: fineractClient,
+    tenantProvisioner
+} = require("../../integrations/fineract");
+
+const { CLASSES: CHART_OF_ACCOUNTS } = require("./chart-of-accounts.seed");
+
+const {
     NotFoundError,
     ConflictError,
     BusinessRuleError
@@ -324,6 +331,178 @@ class OnboardingService {
             rejectionReason: reason || null
 
         });
+
+    }
+
+    /**
+     * ======================================================
+     * Admin: Approve
+     * ----------------------------------------------------------
+     * The real provisioning step: creates the Fineract tenant,
+     * seeds its chart of accounts and roles, then flips this
+     * request to active. Each stage is sequential and each
+     * failure surfaces exactly which stage broke - there's no
+     * automatic rollback of an already-created Fineract tenant,
+     * since half-provisioning is recoverable (retry approve
+     * again once the underlying issue is fixed; the Fineract-side
+     * steps are safe to repeat) but silently deleting a tenant's
+     * schema on a later-stage failure is not a step to take
+     * without a human looking at it first.
+     * ======================================================
+     */
+    async approve(id, admin) {
+
+        const request = await this.getById(id);
+
+        if (request.status !== "pending") {
+
+            throw new ConflictError(
+                `Cannot approve a request that is already ${request.status}.`
+            );
+
+        }
+
+        if (!request.chartOfAccountsConfirmed) {
+
+            throw new BusinessRuleError(
+                "Chart of accounts must be confirmed before approval."
+            );
+
+        }
+
+        const fineractTenantIdentifier =
+            request.subdomain.replace(/-/g, "_");
+
+        if (!tenantProvisioner.isValidIdentifier(fineractTenantIdentifier)) {
+
+            throw new BusinessRuleError(
+                "Subdomain cannot be turned into a valid Fineract tenant identifier."
+            );
+
+        }
+
+        await tenantProvisioner.provisionTenant(
+
+            fineractTenantIdentifier,
+
+            request.companyName
+
+        );
+
+        /**
+         * The new tenant's schema is empty until this first
+         * authenticated call runs Liquibase migration.
+         */
+        await fineractClient.warmUp(fineractTenantIdentifier);
+
+        await this._seedChartOfAccounts(fineractTenantIdentifier);
+
+        await this._seedRoles(fineractTenantIdentifier, request.roles);
+
+        return repository.update(id, {
+
+            status: "active",
+
+            fineractTenantIdentifier,
+
+            reviewedBy: admin.username,
+
+            reviewedAt: new Date()
+
+        });
+
+    }
+
+    /**
+     * ======================================================
+     * Seed Chart Of Accounts
+     * ----------------------------------------------------------
+     * 1 header + 4 detail accounts per class. Headers are
+     * created first since detail accounts reference their
+     * header's resourceId as parentId.
+     * ======================================================
+     */
+    async _seedChartOfAccounts(tenantIdentifier) {
+
+        for (const glClass of CHART_OF_ACCOUNTS) {
+
+            const header = await fineractClient.createGLAccount(
+
+                tenantIdentifier,
+
+                {
+
+                    name: glClass.header,
+
+                    glCode: glClass.code,
+
+                    type: glClass.type,
+
+                    usage: 2,
+
+                    manualEntriesAllowed: true
+
+                }
+
+            );
+
+            for (const [code, name] of glClass.details) {
+
+                await fineractClient.createGLAccount(
+
+                    tenantIdentifier,
+
+                    {
+
+                        name,
+
+                        glCode: code,
+
+                        type: glClass.type,
+
+                        usage: 1,
+
+                        manualEntriesAllowed: true,
+
+                        parentId: header.resourceId
+
+                    }
+
+                );
+
+            }
+
+        }
+
+    }
+
+    /**
+     * ======================================================
+     * Seed Roles
+     * ----------------------------------------------------------
+     * Names only, no permissions yet - exact permission grants
+     * per role are a still-open item in the onboarding plan.
+     * ======================================================
+     */
+    async _seedRoles(tenantIdentifier, roles) {
+
+        for (const role of roles) {
+
+            await fineractClient.createRole(
+
+                tenantIdentifier,
+
+                {
+
+                    name: role,
+
+                    description: `Standard ${role} role, seeded at tenant onboarding.`
+
+                }
+
+            );
+
+        }
 
     }
 

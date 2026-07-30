@@ -128,4 +128,17 @@ router.post(
     controller.reject
 );
 
+/**
+ * Approve a pending request - provisions the real Fineract
+ * tenant, seeds chart of accounts + roles. Long-running
+ * (docker restart + health wait, up to ~4 minutes worst case).
+ */
+router.post(
+    "/admin/onboarding/requests/:id/approve",
+    adminAuth,
+    validator.getById,
+    validate,
+    controller.approve
+);
+
 module.exports = router;

@@ -207,6 +207,22 @@ const reject = async (req, res) => {
 
 };
 
+/**
+ * Admin Approve
+ *
+ * POST /admin/onboarding/requests/:id/approve
+ */
+const approve = async (req, res) => {
+
+    const request = await service.approve(req.params.id, req.admin);
+
+    return success(res, {
+        message: "Onboarding request approved and tenant provisioned.",
+        data: request
+    });
+
+};
+
 module.exports = {
 
     submit,
@@ -225,6 +241,8 @@ module.exports = {
 
     update,
 
-    reject
+    reject,
+
+    approve
 
 };
