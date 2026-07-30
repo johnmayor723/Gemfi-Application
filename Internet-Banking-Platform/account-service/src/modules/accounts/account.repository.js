@@ -78,6 +78,17 @@ class AccountRepository {
     }
 
     /**
+     * Find by NUBAN.
+     */
+    async findByNuban(nuban) {
+
+        return AccountMapping.findOne({
+            nuban
+        });
+
+    }
+
+    /**
      * Get all account mappings.
      */
     async findAll() {
@@ -222,6 +233,19 @@ class AccountRepository {
         return AccountMapping.exists({
 
             phoneNumber
+
+        });
+
+    }
+
+    /**
+     * Check if NUBAN exists.
+     */
+    async existsByNuban(nuban) {
+
+        return AccountMapping.exists({
+
+            nuban
 
         });
 

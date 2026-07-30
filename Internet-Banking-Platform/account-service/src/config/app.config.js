@@ -93,6 +93,19 @@ const config = {
 
         secret: process.env.JWT_SECRET
 
+    },
+
+    adminSession: {
+
+        jwtSecret:
+            process.env.ADMIN_JWT_SECRET || process.env.JWT_SECRET,
+
+        absoluteTtlMinutes:
+            Number(process.env.ADMIN_SESSION_TTL_MINUTES) || 30,
+
+        inactivityTtlMinutes:
+            Number(process.env.ADMIN_INACTIVITY_TIMEOUT_MINUTES) || 10
+
     }
 
 };

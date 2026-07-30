@@ -124,6 +124,49 @@ const FileSchema = new mongoose.Schema(
         deleted: {
             type: Boolean,
             default: false
+        },
+
+        /**
+         * Fineract Sync
+         * ----------------------------------------------------
+         * Tracks whether this file's bytes have been pushed
+         * onto the Fineract client record (image slot for
+         * PHOTO, generic Documents API for everything else),
+         * the resourceId Fineract assigned, and retry state
+         * for failed syncs.
+         */
+        fineractSync: {
+
+            synced: {
+                type: Boolean,
+                default: false
+            },
+
+            resourceId: {
+                type: String,
+                default: null
+            },
+
+            syncedAt: {
+                type: Date,
+                default: null
+            },
+
+            attempts: {
+                type: Number,
+                default: 0
+            },
+
+            lastAttemptAt: {
+                type: Date,
+                default: null
+            },
+
+            lastError: {
+                type: String,
+                default: null
+            }
+
         }
 
     },

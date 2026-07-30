@@ -6,6 +6,7 @@ const kycRepository = require("../repositories/kyc.repository");
 const verificationFlags = require("../constants/verificationFlags");
 
 const auditService = require("./audit.service");
+const fineractSyncService = require("./fineractSync.service");
 
 const ApiError = require("../utils/ApiError");
 
@@ -129,6 +130,15 @@ class FileService {
             }
 
         });
+
+        /**
+         * Push the artifact onto Fineract's client record.
+         * Best-effort: syncFile() never throws, so a Fineract
+         * outage never fails the upload itself. A failed sync
+         * is retried by the background sweep or an explicit
+         * POST /files/:fileId/sync.
+         */
+        await fineractSyncService.syncFile(savedFile);
 
         return savedFile;
 

@@ -123,6 +123,82 @@ class FileRepository {
 
     /**
      * ======================================================
+     * Every non-deleted file for a customer, across all
+     * file types. Used for sync status + reconciliation.
+     * ======================================================
+     */
+    async findAllForCustomer(customerId) {
+
+        return File.find({
+
+            customerId,
+
+            deleted: false
+
+        })
+
+        .sort({
+
+            createdAt: -1
+
+        });
+
+    }
+
+    /**
+     * ======================================================
+     * Files that still need a Fineract sync attempt, capped
+     * at maxAttempts so a permanently-broken file doesn't
+     * get retried forever by the background sweep.
+     * ======================================================
+     */
+    async findUnsynced(maxAttempts) {
+
+        return File.find({
+
+            deleted: false,
+
+            "fineractSync.synced": false,
+
+            "fineractSync.attempts": {
+
+                $lt: maxAttempts
+
+            }
+
+        });
+
+    }
+
+    /**
+     * ======================================================
+     * Persist the outcome of a Fineract sync attempt.
+     * ======================================================
+     */
+    async updateFineractSync(id, fineractSync) {
+
+        return File.findByIdAndUpdate(
+
+            id,
+
+            {
+
+                fineractSync
+
+            },
+
+            {
+
+                new: true
+
+            }
+
+        );
+
+    }
+
+    /**
+     * ======================================================
      * Soft delete.
      * ======================================================
      */

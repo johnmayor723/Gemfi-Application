@@ -1,5 +1,15 @@
 const client = require("./fineract.client");
 
+/**
+ * One-to-one Fineract Data Table, registered against m_client,
+ * that carries the two GemFi-issued identifiers onto the
+ * Fineract client record itself: the phone-derived Account
+ * Number and the (interim) NUBAN. Registered once via
+ * scripts/register-account-identifiers-datatable.js - see that
+ * script for the exact column definition.
+ */
+const ACCOUNT_IDENTIFIERS_DATATABLE = "client_account_identifiers";
+
 class FineractAdapter {
 
     /**
@@ -100,6 +110,45 @@ class FineractAdapter {
                 (savings.summary && savings.summary.availableBalance) ?? null
 
         };
+
+    }
+
+    /**
+     * Register the phone-derived Account Number and the
+     * generated NUBAN onto the Fineract client record, via the
+     * client_account_identifiers Data Table.
+     *
+     * The datatable is one-to-one, so the first write for a
+     * client must be a create; every write after that must be
+     * an update. There's no cheap way to know in advance which
+     * one this is, so this always attempts create first and
+     * falls back to update on failure (Fineract returns an
+     * error if a one-to-one entry already exists).
+     */
+    async setClientAccountIdentifiers(clientId, { accountNumber, nuban }) {
+
+        const payload = {
+            accountNumber,
+            nuban
+        };
+
+        try {
+
+            return await client.createDatatableEntry(
+                ACCOUNT_IDENTIFIERS_DATATABLE,
+                clientId,
+                payload
+            );
+
+        } catch (error) {
+
+            return await client.updateDatatableEntry(
+                ACCOUNT_IDENTIFIERS_DATATABLE,
+                clientId,
+                payload
+            );
+
+        }
 
     }
 

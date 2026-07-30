@@ -11,6 +11,10 @@ const router = express.Router();
 const auditController =
 require("../controllers/audit.controller");
 
+const adminAuth = require("../middleware/adminAuth");
+
+router.use(adminAuth);
+
 /**
  * ==========================================================
  * Customer Audit Timeline

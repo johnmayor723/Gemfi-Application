@@ -162,6 +162,44 @@ async getSavingsTransactions(accountId) {
 
 }
 
+/**
+ * Create Datatable Entry
+ *
+ * Writes a new row into a Fineract Data Table registered
+ * against an application table (e.g. m_client). For a
+ * one-to-one datatable, apptableId is the owning entity's
+ * ID (e.g. the Fineract Client ID) and this may only be
+ * called once per entity - subsequent writes must use
+ * updateDatatableEntry instead.
+ */
+async createDatatableEntry(datatableName, apptableId, payload) {
+
+    const { data } = await client.post(
+        `/datatables/${datatableName}/${apptableId}?tenantIdentifier=${app.fineract.tenant}`,
+        payload
+    );
+
+    return data;
+
+}
+
+/**
+ * Update Datatable Entry
+ *
+ * Updates the existing row of a one-to-one Fineract Data
+ * Table for the given owning entity ID.
+ */
+async updateDatatableEntry(datatableName, apptableId, payload) {
+
+    const { data } = await client.put(
+        `/datatables/${datatableName}/${apptableId}?tenantIdentifier=${app.fineract.tenant}`,
+        payload
+    );
+
+    return data;
+
+}
+
 }
 
 module.exports = new FineractClient();

@@ -1,5 +1,5 @@
 const accountRepository = require("./account.repository");
-const generator = require("./account-number.generator");
+const nubanGenerator = require("./nuban.generator");
 const phoneAccountNumberGenerator = require("./phone-account-number.generator");
 
 const {
@@ -53,6 +53,14 @@ class AccountService {
      * Idempotent: re-calling with the same fineractAccountId
      * after a prior success returns the same accountNumber
      * rather than regenerating one.
+     *
+     * Every provisioned account is assigned two GemFi-issued
+     * identifiers: a phone-derived accountNumber (the customer's
+     * permanent, official account number) and a generated nuban
+     * (an interim, NIBSS-shaped identifier used until a real
+     * NIBSS integration exists). Both are also registered onto
+     * the Fineract client record itself, best-effort, via
+     * FineractAdapter#setClientAccountIdentifiers.
      */
     async provisionAccount({
         fineractAccountId,
@@ -91,11 +99,14 @@ class AccountService {
                 fineractAccountId
             );
 
+        const nuban =
+            await nubanGenerator.generate();
+
         const payload = {
 
             accountNumber,
 
-            nuban: null,
+            nuban,
 
             fineractAccountId,
 
@@ -113,9 +124,11 @@ class AccountService {
 
         };
 
+        let created;
+
         try {
 
-            return await accountRepository.create(
+            created = await accountRepository.create(
                 payload
             );
 
@@ -149,6 +162,14 @@ class AccountService {
             throw error;
 
         }
+
+        await this._registerIdentifiersWithFineract(
+            account.clientId,
+            accountNumber,
+            nuban
+        );
+
+        return created;
 
     }
 
@@ -208,6 +229,50 @@ class AccountService {
     }
 
     /**
+     * Get by phone number.
+     */
+    async getByPhoneNumber(phoneNumber) {
+
+        const account =
+            await accountRepository.findByPhoneNumber(
+                phoneNumber
+            );
+
+        if (!account) {
+
+            throw new NotFoundError(
+                "Account mapping not found."
+            );
+
+        }
+
+        return account;
+
+    }
+
+    /**
+     * Get by NUBAN.
+     */
+    async getByNuban(nuban) {
+
+        const account =
+            await accountRepository.findByNuban(
+                nuban
+            );
+
+        if (!account) {
+
+            throw new NotFoundError(
+                "Account mapping not found."
+            );
+
+        }
+
+        return account;
+
+    }
+
+    /**
      * Name enquiry.
      */
     async nameEnquiry(accountNumber) {
@@ -242,6 +307,14 @@ class AccountService {
 
     /**
      * Synchronize mapping from Fineract.
+     *
+     * Used to backfill a mapping that provisionAccount never
+     * created (e.g. the call was dropped between Fineract
+     * confirming the savings account and gemfi-mfb-portal reaching
+     * account-service). Uses the same identifier rules as
+     * provisionAccount: a fresh mapping always gets a
+     * phone-derived accountNumber and a generated nuban, never
+     * a Fineract-assigned number.
      */
     async syncAccount(fineractAccountId) {
 
@@ -262,7 +335,8 @@ class AccountService {
             );
 
         /**
-         * Preserve generated account number.
+         * Preserve generated identifiers on an existing mapping;
+         * derive them fresh for a new one.
          */
         let accountNumber;
         let nuban;
@@ -271,15 +345,17 @@ class AccountService {
 
             accountNumber =
                 existing.accountNumber;
-            nuban = existing.nuban    
+            nuban = existing.nuban;
 
         } else {
 
             accountNumber =
-                await generator.generate();
+                phoneAccountNumberGenerator.deriveFromPhoneNumber(
+                    account.mobileNo
+                );
 
-             nuban = accountNumber
-                  
+            nuban =
+                await nubanGenerator.generate();
 
         }
 
@@ -335,9 +411,52 @@ class AccountService {
 
         }
 
-        return accountRepository.create(
-            payload
+        let created;
+
+        try {
+
+            created = await accountRepository.create(
+                payload
+            );
+
+        } catch (error) {
+
+            /**
+             * Concurrent duplicate submission for the same
+             * Fineract account - recover by returning the
+             * mapping the other request created instead of
+             * erroring.
+             */
+            if (error.code === 11000) {
+
+                const recovered =
+                    await accountRepository.findByFineractAccountId(
+                        fineractAccountId
+                    );
+
+                if (recovered) {
+
+                    return recovered;
+
+                }
+
+                throw new ConflictError(
+                    "This account number is already assigned to another customer."
+                );
+
+            }
+
+            throw error;
+
+        }
+
+        await this._registerIdentifiersWithFineract(
+            account.clientId,
+            accountNumber,
+            nuban
         );
+
+        return created;
 
     }
 
@@ -450,6 +569,37 @@ class AccountService {
                     "ACTIVE"
 
         };
+
+    }
+
+    /**
+     * Push the phone-derived accountNumber and the generated
+     * nuban onto the Fineract client record. Best-effort: a
+     * Fineract-side failure here does not fail account
+     * provisioning, since the Mongo mapping (the platform's
+     * source of truth for these identifiers) already succeeded.
+     * A retriable backfill is what syncAccount is for.
+     */
+    async _registerIdentifiersWithFineract(clientId, accountNumber, nuban) {
+
+        try {
+
+            await fineract.setClientAccountIdentifiers(
+                clientId,
+                {
+                    accountNumber,
+                    nuban
+                }
+            );
+
+        } catch (error) {
+
+            console.error(
+                `Failed to register account identifiers on Fineract client ${clientId}:`,
+                error.message
+            );
+
+        }
 
     }
 

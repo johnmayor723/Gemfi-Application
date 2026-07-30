@@ -8,6 +8,13 @@ const internalAuth = require("../../middleware/internal-auth.middleware");
 
 const authenticate = require("../../middleware/authenticate.middleware");
 
+const adminAuth = require("../../middleware/admin-auth.middleware");
+
+const {
+    publicLookupLimiter,
+    adminActionLimiter
+} = require("../../middleware/rate-limit.middleware");
+
 const {
     createMapping,
     validateAccount,
@@ -26,10 +33,15 @@ const router = express.Router();
 
 /**
  * Provision an Account Number for a savings account just
- * created in Fineract. Called directly by gemfi-mfb-portal.
+ * created in Fineract. Called directly by gemfi-mfb-portal, so
+ * this is gated by admin-session auth (Fineract-backed login,
+ * see /admin/auth/login) rather than the internal service
+ * token, which a browser can never hold safely.
  */
 router.post(
     "/accounts",
+    adminAuth,
+    adminActionLimiter,
     registerAccount,
     validate,
     controller.provisionAccount
@@ -37,28 +49,38 @@ router.post(
 
 /**
  * Read back the Account Number / NUBAN / Fineract account
- * number for a savings account. Called directly by gemfi-mfb-portal.
+ * number for a savings account. Called directly by gemfi-mfb-portal,
+ * same admin-session gate as above.
  */
 router.get(
     "/accounts/fineract/:fineractAccountId",
+    adminAuth,
+    adminActionLimiter,
     controller.getPublicMappingByFineractAccountId
 );
 
 /**
  * Validate ownership during Internet Banking registration.
+ * Deliberately left without identity auth - a customer hits
+ * this before they have any session (mid-enrollment). Rate
+ * limiting is the real defense against abuse here.
  */
 router.post(
     "/accounts/validate",
+    publicLookupLimiter,
     validateAccount,
     validate,
     controller.validateAccount
 );
 
 /**
- * Name enquiry.
+ * Name enquiry. Same reasoning as /accounts/validate - a
+ * prospective customer runs this pre-enrollment, so it stays
+ * open with rate limiting instead of identity auth.
  */
 router.get(
     "/accounts/name-enquiry/:accountNumber",
+    publicLookupLimiter,
     nameEnquiry,
     validate,
     controller.nameEnquiry
@@ -122,6 +144,24 @@ router.get(
     "/internal/accounts/fineract/:fineractAccountId",
     internalAuth,
     controller.getByFineractAccountId
+);
+
+/**
+ * Find by phone number.
+ */
+router.get(
+    "/internal/accounts/phone/:phoneNumber",
+    internalAuth,
+    controller.getByPhoneNumber
+);
+
+/**
+ * Find by NUBAN.
+ */
+router.get(
+    "/internal/accounts/nuban/:nuban",
+    internalAuth,
+    controller.getByNuban
 );
 
 /**

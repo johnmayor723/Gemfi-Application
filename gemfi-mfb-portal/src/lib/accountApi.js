@@ -1,7 +1,17 @@
 // Account Service API client — independent from Fineract, called
 // directly from the browser (not proxied through the Fineract gateway).
 // Reads accountServiceBaseUrl from the same localStorage config as Fineract.
+//
+// Provision/lookup now require a short-lived admin session token,
+// obtained the same way as kyc-service's: exchange the Fineract
+// credentials already stored in Connection settings at
+// POST /admin/auth/login (account-service verifies them against real
+// Fineract, not just trusting whatever the client claims).
 import { getFineractConfig } from './fineract';
+
+// In-memory only — a session token is meant to be short-lived and
+// should not survive a page reload the way localStorage would.
+let adminSession = null; // { token, expiresAt }
 
 export function getAccountServiceConfig() {
   const config = getFineractConfig();
@@ -11,6 +21,40 @@ export function getAccountServiceConfig() {
 export function isAccountServiceConfigured() {
   const config = getFineractConfig();
   return !!(config && config.accountServiceBaseUrl);
+}
+
+function clearAdminSession() {
+  adminSession = null;
+}
+
+async function loginAdmin(config) {
+  const url = `${config.accountServiceBaseUrl.replace(/\/+$/, '')}/admin/auth/login`;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: config.username, password: config.password }),
+  });
+
+  const payload = await res.json().catch(() => null);
+
+  if (!res.ok || !payload?.data?.token) {
+    throw new Error(payload?.message || 'Account Service admin login failed. Check the credentials in Connection settings.');
+  }
+
+  // Refresh a little before actual expiry so an in-flight request
+  // never races the token dying mid-air.
+  const expiresAt = Date.now() + (payload.data.expiresInMinutes * 60 * 1000) - (30 * 1000);
+
+  adminSession = { token: payload.data.token, expiresAt };
+  return adminSession.token;
+}
+
+async function getAdminToken(config) {
+  if (adminSession && adminSession.expiresAt > Date.now()) {
+    return adminSession.token;
+  }
+  return loginAdmin(config);
 }
 
 export async function accountApi(path, options = {}) {
@@ -23,11 +67,22 @@ export async function accountApi(path, options = {}) {
 
   const url = `${config.accountServiceBaseUrl.replace(/\/+$/, '')}${path}`;
 
-  const res = await fetch(url, {
+  const doFetch = (token) => fetch(url, {
     method,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
     body: body ? JSON.stringify(body) : undefined,
   });
+
+  let token = await getAdminToken(config);
+  let res = await doFetch(token);
+
+  // Session may have expired from inactivity between calls — retry
+  // once with a fresh login before surfacing an error.
+  if (res.status === 401) {
+    clearAdminSession();
+    token = await getAdminToken(config);
+    res = await doFetch(token);
+  }
 
   if (!res.ok) {
     if (res.status === 404) return null;

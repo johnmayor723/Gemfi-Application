@@ -177,6 +177,40 @@ const getByFineractAccountId = async (req, res) => {
 
 };
 /**
+ * Get By Phone Number
+ */
+const getByPhoneNumber = async (req, res) => {
+
+    const account =
+        await accountService.getByPhoneNumber(
+            req.params.phoneNumber
+        );
+
+    return success(res, {
+        message: "Account retrieved successfully.",
+        data: account
+    });
+
+};
+
+/**
+ * Get By NUBAN
+ */
+const getByNuban = async (req, res) => {
+
+    const account =
+        await accountService.getByNuban(
+            req.params.nuban
+        );
+
+    return success(res, {
+        message: "Account retrieved successfully.",
+        data: account
+    });
+
+};
+
+/**
  * Synchronize account from Fineract.
  */
 const syncAccount = async (req, res) => {
@@ -212,6 +246,10 @@ module.exports = {
     getByClientId,
 
     getByFineractAccountId,
+
+    getByPhoneNumber,
+
+    getByNuban,
 
     syncAccount
 

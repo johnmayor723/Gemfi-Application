@@ -13,5 +13,7 @@ module.exports = {
 
     ConflictError: require("./classes/conflict.error"),
 
-    BusinessRuleError: require("./classes/business-rule.error")
+    BusinessRuleError: require("./classes/business-rule.error"),
+
+    TooManyRequestsError: require("./classes/too-many-requests.error")
 };

@@ -2,6 +2,10 @@ const express = require("express");
 
 const router = express.Router();
 
+const adminAuth = require("../middleware/adminAuth");
+
+router.use(adminAuth);
+
 /**
  * Controllers
  */
@@ -306,6 +310,8 @@ router.get(
 router.post(
     "/customers/:customerId/address/proof",
 
+    uploadType(FileTypes.ADDRESS_PROOF),
+
     upload.single("file"),
 
     addressController.uploadProof
@@ -443,6 +449,8 @@ router.delete(
 router.post(
 
     "/references/:id/letter",
+
+    uploadType(FileTypes.REFERENCE_LETTER),
 
     upload.single("file"),
 

@@ -2,7 +2,13 @@ require("express-async-errors");
 
 const express = require("express");
 
+const helmet = require("helmet");
+
 const cors = require("cors");
+
+const mongoSanitize = require("express-mongo-sanitize");
+
+const hpp = require("hpp");
 
 const routes = require("./routes");
 
@@ -10,10 +16,20 @@ const correlationId = require("./middleware/correlation-id.middleware");
 const requestLogger = require("./middleware/request-logger.middleware");
 const notFoundMiddleware = require("./middleware/not-found.middleware");
 const errorHandler = require("./middleware/error-handler.middleware");
+const { globalLimiter } = require("./middleware/rate-limit.middleware");
 
 const app = express();
 
 app.disable("x-powered-by");
+
+/**
+ * Secure HTTP headers.
+ */
+app.use(
+    helmet({
+        crossOriginResourcePolicy: false
+    })
+);
 
 /**
  * CORS
@@ -30,6 +46,22 @@ app.use(
 app.use(express.json());
 
 app.use(express.urlencoded({ extended: true }));
+
+/**
+ * Strip Mongo operators ($gt, $ne, etc.) from req.body/query/params.
+ */
+app.use(mongoSanitize());
+
+/**
+ * HTTP Parameter Pollution protection.
+ */
+app.use(hpp());
+
+/**
+ * Baseline rate limit across every route. Routes that need a
+ * tighter limit layer their own on top.
+ */
+app.use(globalLimiter);
 
 /**
  * Correlation ID must run before logging so every log line
