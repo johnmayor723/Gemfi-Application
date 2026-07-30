@@ -31,11 +31,14 @@ export default function ClientKycTab({ clientId }) {
       const [kycData, statusData, timelineData] = await Promise.allSettled([
         kycApi(`/customers/${clientId}/kyc`),
         kycApi(`/customers/${clientId}/status`),
-        kycApi(`/customers/${clientId}/timeline`),
+        kycApi(`/customers/${clientId}/audit`),
       ]);
-      if (kycData.status === 'fulfilled') setKyc(kycData.value);
-      if (statusData.status === 'fulfilled') setStatus(statusData.value);
-      if (timelineData.status === 'fulfilled') setTimeline(timelineData.value || []);
+      // kycApi() returns the raw response envelope ({ success, data, ... }),
+      // not the unwrapped payload — every consumer below expects the
+      // unwrapped shape (kyc.status, status.completion, a plain array).
+      if (kycData.status === 'fulfilled') setKyc(kycData.value?.data ?? null);
+      if (statusData.status === 'fulfilled') setStatus(statusData.value?.data ?? null);
+      if (timelineData.status === 'fulfilled') setTimeline(timelineData.value?.data || []);
     } catch (err) {
       setError(err.message);
     } finally {

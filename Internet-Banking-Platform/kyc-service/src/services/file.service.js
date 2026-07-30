@@ -198,6 +198,8 @@ class FileService {
 
             "..",
 
+            "..",
+
             "uploads",
 
             file.path

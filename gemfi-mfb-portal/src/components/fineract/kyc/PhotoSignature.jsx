@@ -15,7 +15,7 @@ export default function PhotoSignature({ clientId, photo, signature, onChanged }
     setBusy('photo');
     try {
       const res = await kycUpload(`/customers/${clientId}/photo`, file, 'photo', {}, onProgress);
-      setPhotoUrl(res?.url);
+      setPhotoUrl(res?.data?.url);
       toast({ title: 'Photo uploaded' });
       onChanged?.();
     } catch (err) {
@@ -28,7 +28,7 @@ export default function PhotoSignature({ clientId, photo, signature, onChanged }
     setBusy('sig');
     try {
       const res = await kycUpload(`/customers/${clientId}/signature`, file, 'signature', {}, onProgress);
-      setSigUrl(res?.url);
+      setSigUrl(res?.data?.url);
       toast({ title: 'Signature uploaded' });
       onChanged?.();
     } catch (err) {

@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import KycCard from './KycCard';
-import KycStatusBadge from './KycStatusBadge';
 
 const ID_TYPES = ['National ID', 'Driver\'s Licence', 'International Passport', 'Voter Card'];
 
@@ -28,7 +27,7 @@ export default function Identification({ clientId, bvn, nin, identification, onC
     setVerifying('bvn');
     try {
       const res = await kycApi(`/customers/${clientId}/bvn/verify`, { method: 'POST', body: { bvn: bvnInput.trim() } });
-      toast({ title: res?.verified ? 'BVN Verified' : 'BVN verification result', description: res?.verified ? `${res.firstName} ${res.lastName}` : undefined });
+      toast({ title: res?.data?.verified ? 'BVN Verified' : 'BVN verification result', description: res?.data?.verified ? `${res.data.firstName} ${res.data.lastName}` : undefined });
       onChanged?.();
     } catch (err) {
       toast({ title: 'BVN verification failed', description: err.message, variant: 'destructive' });
@@ -40,7 +39,7 @@ export default function Identification({ clientId, bvn, nin, identification, onC
     setVerifying('nin');
     try {
       const res = await kycApi(`/customers/${clientId}/nin/verify`, { method: 'POST', body: { nin: ninInput.trim() } });
-      toast({ title: res?.verified ? 'NIN Verified' : 'NIN verification result' });
+      toast({ title: res?.data?.verified ? 'NIN Verified' : 'NIN verification result' });
       onChanged?.();
     } catch (err) {
       toast({ title: 'NIN verification failed', description: err.message, variant: 'destructive' });

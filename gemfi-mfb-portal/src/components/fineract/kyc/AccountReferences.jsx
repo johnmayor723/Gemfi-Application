@@ -29,11 +29,11 @@ export default function AccountReferences({ clientId, references: initial }) {
     try {
       if (editingId) {
         await kycApi(`/references/${editingId}`, { method: 'PUT', body: form });
-        setList(prev => prev.map(r => r.id === editingId ? { ...r, ...form } : r));
+        setList(prev => prev.map(r => r._id === editingId ? { ...r, ...form } : r));
         toast({ title: 'Reference updated' });
       } else {
         const res = await kycApi(`/customers/${clientId}/references`, { method: 'POST', body: form });
-        setList(prev => [...prev, { id: res?.id || Date.now(), ...form }]);
+        setList(prev => [...prev, { _id: res?.data?._id || Date.now(), ...form }]);
         toast({ title: 'Reference added' });
       }
       setForm(EMPTY); setEditingId(null);
@@ -42,13 +42,13 @@ export default function AccountReferences({ clientId, references: initial }) {
     } finally { setSaving(false); }
   };
 
-  const edit = (item) => { setForm({ name: item.name, phoneNumber: item.phoneNumber, email: item.email, address: item.address, occupation: item.occupation, bank: item.bank, accountNumber: item.accountNumber }); setEditingId(item.id); };
+  const edit = (item) => { setForm({ name: item.name, phoneNumber: item.phoneNumber, email: item.email, address: item.address, occupation: item.occupation, bank: item.bank, accountNumber: item.accountNumber }); setEditingId(item._id); };
 
   const remove = async (id) => {
     setDeleting(id);
     try {
       await kycApi(`/references/${id}`, { method: 'DELETE' });
-      setList(prev => prev.filter(r => r.id !== id));
+      setList(prev => prev.filter(r => r._id !== id));
       toast({ title: 'Reference removed' });
     } catch (err) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
@@ -58,8 +58,11 @@ export default function AccountReferences({ clientId, references: initial }) {
   const uploadLetter = async (refId, file) => {
     setUploadingFor(refId);
     try {
-      const res = await kycUpload(`/references/${refId}/letter`, file, 'file', {}, () => {});
-      setList(prev => prev.map(r => r.id === refId ? { ...r, letterUrl: res?.url } : r));
+      const res = await kycUpload(`/references/${refId}/letter`, file, 'file', { customerId: clientId }, () => {});
+      // Upload response only carries { fileId } — build the viewable
+      // URL the same way the file-download route expects it.
+      const letterUrl = res?.data?.fileId ? `/api/v1/files/${res.data.fileId}` : null;
+      setList(prev => prev.map(r => r._id === refId ? { ...r, letterUrl } : r));
       toast({ title: 'Reference letter uploaded' });
     } catch (err) {
       toast({ title: 'Upload failed', description: err.message, variant: 'destructive' });
@@ -89,7 +92,7 @@ export default function AccountReferences({ clientId, references: initial }) {
       ) : (
         <div className="space-y-2">
           {list.map(ref => (
-            <div key={ref.id} className="p-3 rounded-lg bg-slate-900/50 border border-slate-700/50">
+            <div key={ref._id} className="p-3 rounded-lg bg-slate-900/50 border border-slate-700/50">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm text-white">{ref.name} <span className="text-xs text-slate-500">· {ref.occupation}</span></p>
@@ -100,13 +103,13 @@ export default function AccountReferences({ clientId, references: initial }) {
                 <div className="flex gap-1 items-center">
                   <KycStatusBadge status={ref.status || 'pending'} />
                   <label className="p-1.5 text-slate-400 hover:text-white cursor-pointer">
-                    {uploadingFor === ref.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-                    <input type="file" className="hidden" accept=".jpg,.jpeg,.png,.pdf" onChange={e => { const f = e.target.files?.[0]; if (f) uploadLetter(ref.id, f); e.target.value = ''; }} />
+                    {uploadingFor === ref._id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                    <input type="file" className="hidden" accept=".jpg,.jpeg,.png,.pdf" onChange={e => { const f = e.target.files?.[0]; if (f) uploadLetter(ref._id, f); e.target.value = ''; }} />
                   </label>
                   {ref.letterUrl && <button onClick={() => window.open(ref.letterUrl, '_blank')} className="p-1.5 text-slate-400 hover:text-white"><Eye className="w-3.5 h-3.5" /></button>}
                   <button onClick={() => edit(ref)} className="p-1.5 text-slate-400 hover:text-white"><Edit className="w-3.5 h-3.5" /></button>
-                  <button onClick={() => remove(ref.id)} disabled={deleting === ref.id} className="p-1.5 text-rose-400 hover:text-rose-300">
-                    {deleting === ref.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                  <button onClick={() => remove(ref._id)} disabled={deleting === ref._id} className="p-1.5 text-rose-400 hover:text-rose-300">
+                    {deleting === ref._id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                   </button>
                 </div>
               </div>

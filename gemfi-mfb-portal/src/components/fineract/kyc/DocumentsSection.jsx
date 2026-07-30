@@ -30,7 +30,17 @@ export default function DocumentsSection({ clientId, documents: initialDocs, onC
         documentNumber: docNumber,
         expiryDate,
       }, onProgress);
-      setDocs(prev => [...prev, res].filter(Boolean));
+      // Upload response only carries { documentId } — build a local
+      // representation from what was actually submitted rather than
+      // fields the API never returns.
+      const newDoc = {
+        documentId: res?.data?.documentId,
+        documentType: docType,
+        documentNumber: docNumber,
+        uploadDate: new Date().toISOString(),
+        status: 'pending',
+      };
+      setDocs(prev => [...prev, newDoc]);
       setDocNumber(''); setExpiryDate('');
       toast({ title: 'Document uploaded' });
       onChanged?.();

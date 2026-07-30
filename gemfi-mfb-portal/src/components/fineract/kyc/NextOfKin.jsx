@@ -27,11 +27,11 @@ export default function NextOfKin({ clientId, nextOfKin: initial }) {
     try {
       if (editingId) {
         await kycApi(`/next-of-kin/${editingId}`, { method: 'PUT', body: form });
-        setList(prev => prev.map(n => n.id === editingId ? { ...n, ...form } : n));
+        setList(prev => prev.map(n => n._id === editingId ? { ...n, ...form } : n));
         toast({ title: 'Next of kin updated' });
       } else {
         const res = await kycApi(`/customers/${clientId}/next-of-kin`, { method: 'POST', body: form });
-        setList(prev => [...prev, { id: res?.id || Date.now(), ...form }]);
+        setList(prev => [...prev, { _id: res?.data?._id || Date.now(), ...form }]);
         toast({ title: 'Next of kin added' });
       }
       setForm(EMPTY); setEditingId(null);
@@ -40,13 +40,13 @@ export default function NextOfKin({ clientId, nextOfKin: initial }) {
     } finally { setSaving(false); }
   };
 
-  const edit = (item) => { setForm({ name: item.name, relationship: item.relationship, phone: item.phone, email: item.email, address: item.address }); setEditingId(item.id); };
+  const edit = (item) => { setForm({ name: item.name, relationship: item.relationship, phone: item.phone, email: item.email, address: item.address }); setEditingId(item._id); };
 
   const remove = async (id) => {
     setDeleting(id);
     try {
       await kycApi(`/next-of-kin/${id}`, { method: 'DELETE' });
-      setList(prev => prev.filter(n => n.id !== id));
+      setList(prev => prev.filter(n => n._id !== id));
       toast({ title: 'Removed' });
     } catch (err) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
@@ -74,7 +74,7 @@ export default function NextOfKin({ clientId, nextOfKin: initial }) {
       ) : (
         <div className="space-y-2">
           {list.map(item => (
-            <div key={item.id} className="flex items-start justify-between p-3 rounded-lg bg-slate-900/50 border border-slate-700/50">
+            <div key={item._id} className="flex items-start justify-between p-3 rounded-lg bg-slate-900/50 border border-slate-700/50">
               <div>
                 <p className="text-sm text-white">{item.name} <span className="text-xs text-slate-500">· {item.relationship}</span></p>
                 <p className="text-xs text-slate-400">{item.phone} {item.email ? `· ${item.email}` : ''}</p>
@@ -82,8 +82,8 @@ export default function NextOfKin({ clientId, nextOfKin: initial }) {
               </div>
               <div className="flex gap-1">
                 <button onClick={() => edit(item)} className="p-1.5 text-slate-400 hover:text-white"><Edit className="w-3.5 h-3.5" /></button>
-                <button onClick={() => remove(item.id)} disabled={deleting === item.id} className="p-1.5 text-rose-400 hover:text-rose-300">
-                  {deleting === item.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                <button onClick={() => remove(item._id)} disabled={deleting === item._id} className="p-1.5 text-rose-400 hover:text-rose-300">
+                  {deleting === item._id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                 </button>
               </div>
             </div>
