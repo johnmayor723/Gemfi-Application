@@ -25,6 +25,8 @@ const path = require("path");
 const fs = require("fs");
 const { v4: uuid } = require("uuid");
 
+const ApiError = require("../utils/ApiError");
+
 /**
  * Upload folders.
  */
@@ -58,40 +60,14 @@ function ensureDirectory(directory) {
 }
 
 /**
- * Multer storage configuration.
+ * Files are buffered in memory only. Nothing is written to
+ * disk until persistUploadedFile() below has sniffed the
+ * buffer's real magic bytes - the client-supplied mimetype
+ * header and the originalname's extension are both
+ * attacker-controlled and are never used to decide what gets
+ * saved or under what extension.
  */
-const storage = multer.diskStorage({
-
-    /**
-     * Determines where the uploaded file is stored.
-     */
-    destination(req, file, cb) {
-
-        const fileType = req.uploadType || "DOCUMENT";
-
-        const directory = folders[fileType];
-
-        ensureDirectory(directory);
-
-        cb(null, directory);
-
-    },
-
-    /**
-     * Generates a unique filename.
-     */
-    filename(req, file, cb) {
-
-        const extension = path.extname(file.originalname);
-
-        cb(
-            null,
-            `${uuid()}${extension}`
-        );
-
-    }
-
-});
+const storage = multer.memoryStorage();
 
 /**
  * Valid image/document MIME types.
@@ -109,14 +85,17 @@ const allowedMimeTypes = [
 ];
 
 /**
- * Validate uploaded file.
+ * Cheap first-pass rejection on the client-declared mimetype.
+ * Not authoritative on its own - persistUploadedFile() below
+ * re-checks the real file content before anything is written
+ * to disk.
  */
 function fileFilter(req, file, cb) {
 
     if (!allowedMimeTypes.includes(file.mimetype)) {
 
         return cb(
-            new Error("Unsupported file type."),
+            new ApiError(400, "Unsupported file type."),
             false
         );
 
@@ -127,7 +106,91 @@ function fileFilter(req, file, cb) {
 }
 
 /**
- * Generic upload middleware.
+ * Known file signatures (magic bytes). The saved mimetype and
+ * extension always come from whichever signature the buffer
+ * actually matches here, never from client input.
+ */
+const signatures = [
+
+    {
+
+        mimeType: "image/jpeg",
+
+        extension: ".jpg",
+
+        matches(buffer) {
+
+            return (
+                buffer.length >= 3 &&
+                buffer[0] === 0xff &&
+                buffer[1] === 0xd8 &&
+                buffer[2] === 0xff
+            );
+
+        }
+
+    },
+
+    {
+
+        mimeType: "image/png",
+
+        extension: ".png",
+
+        matches(buffer) {
+
+            const signature = Buffer.from(
+                [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
+            );
+
+            return (
+                buffer.length >= signature.length &&
+                buffer.subarray(0, signature.length).equals(signature)
+            );
+
+        }
+
+    },
+
+    {
+
+        mimeType: "application/pdf",
+
+        extension: ".pdf",
+
+        matches(buffer) {
+
+            return (
+                buffer.length >= 5 &&
+                buffer.subarray(0, 5).toString("ascii") === "%PDF-"
+            );
+
+        }
+
+    }
+
+];
+
+/**
+ * Returns the matching signature for a buffer, or null if the
+ * buffer's real content doesn't match any allowed file type.
+ *
+ * @param {Buffer} buffer
+ * @returns {{mimeType: string, extension: string}|null}
+ */
+function detectFileType(buffer) {
+
+    return (
+        signatures.find((signature) => signature.matches(buffer)) || null
+    );
+
+}
+
+/**
+ * Generic upload middleware. Only buffers the file in memory
+ * and does the cheap mimetype pre-check - persistUploadedFile()
+ * must run after this on every route to actually validate the
+ * content and write it to disk.
  */
 const upload = multer({
 
@@ -143,4 +206,61 @@ const upload = multer({
 
 });
 
+/**
+ * Validates the uploaded buffer's real content against
+ * detectFileType() and, only if it matches an allowed type,
+ * writes it to disk under a generated filename whose
+ * extension is taken from the detected type - never from the
+ * client-supplied originalname. Must be chained directly after
+ * upload.single(...)/upload.fields(...) on any route that
+ * accepts a file.
+ *
+ * Rewrites req.file's filename/mimetype/destination/path in
+ * place so downstream controllers (which read those fields)
+ * behave exactly as they did under the old disk storage.
+ */
+function persistUploadedFile(req, res, next) {
+
+    if (!req.file) {
+
+        return next();
+
+    }
+
+    const detected = detectFileType(req.file.buffer);
+
+    if (!detected) {
+
+        return next(
+            new ApiError(400, "Unsupported or unrecognized file type.")
+        );
+
+    }
+
+    const fileType = req.uploadType || "DOCUMENT";
+
+    const directory = folders[fileType];
+
+    ensureDirectory(directory);
+
+    const filename = `${uuid()}${detected.extension}`;
+
+    const destination = path.join(directory, filename);
+
+    fs.writeFileSync(destination, req.file.buffer);
+
+    req.file.filename = filename;
+
+    req.file.mimetype = detected.mimeType;
+
+    req.file.destination = directory;
+
+    req.file.path = destination;
+
+    next();
+
+}
+
 module.exports = upload;
+
+module.exports.persistUploadedFile = persistUploadedFile;

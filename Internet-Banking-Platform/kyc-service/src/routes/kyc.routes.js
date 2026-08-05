@@ -84,6 +84,8 @@ router.post(
 
     upload.single("photo"),
 
+    upload.persistUploadedFile,
+
     photoController.upload
 
 );
@@ -127,6 +129,8 @@ router.post(
     uploadType(FileTypes.SIGNATURE),
 
     upload.single("signature"),
+
+    upload.persistUploadedFile,
 
     signatureController.upload
 
@@ -176,6 +180,8 @@ router.post(
     uploadType(FileTypes.DOCUMENT),
 
     upload.single("file"),
+
+    upload.persistUploadedFile,
 
     documentController.upload
 
@@ -337,6 +343,8 @@ router.post(
 
     upload.single("file"),
 
+    upload.persistUploadedFile,
+
     addressController.uploadProof
 );
 
@@ -476,6 +484,8 @@ router.post(
     uploadType(FileTypes.REFERENCE_LETTER),
 
     upload.single("file"),
+
+    upload.persistUploadedFile,
 
     referenceController.uploadLetter
 

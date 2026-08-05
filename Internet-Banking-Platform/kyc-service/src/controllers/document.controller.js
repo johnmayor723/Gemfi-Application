@@ -186,6 +186,8 @@ exports.download = asyncHandler(async (req, res) => {
 
         "..",
 
+        "..",
+
         "uploads",
 
         document.path
