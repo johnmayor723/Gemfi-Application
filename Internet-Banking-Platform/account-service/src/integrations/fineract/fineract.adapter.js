@@ -1,5 +1,7 @@
 const client = require("./fineract.client");
 
+const { NotFoundError } = require("../../errors");
+
 /**
  * One-to-one Fineract Data Table, registered against m_client,
  * that carries the two GemFi-issued identifiers onto the
@@ -22,15 +24,51 @@ class FineractAdapter {
      */
     async getAccount(fineractAccountId) {
 
-        const savings =
-            await client.getSavingsAccount(
-                fineractAccountId
-            );
+        let savings;
 
-        const customer =
-            await client.getClient(
-                savings.clientId
-            );
+        try {
+
+            savings =
+                await client.getSavingsAccount(
+                    fineractAccountId
+                );
+
+        } catch (error) {
+
+            if (error.response && error.response.status === 404) {
+
+                throw new NotFoundError(
+                    "Fineract savings account not found."
+                );
+
+            }
+
+            throw error;
+
+        }
+
+        let customer;
+
+        try {
+
+            customer =
+                await client.getClient(
+                    savings.clientId
+                );
+
+        } catch (error) {
+
+            if (error.response && error.response.status === 404) {
+
+                throw new NotFoundError(
+                    "Fineract client not found."
+                );
+
+            }
+
+            throw error;
+
+        }
 
         return {
 
