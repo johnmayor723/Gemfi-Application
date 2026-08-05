@@ -23,6 +23,63 @@ class StatementService {
 
         }
 
+        const statement =
+            await this.buildStatement({
+                accountNumber,
+                startDate,
+                endDate,
+                limit: 500
+            });
+
+        if (format === "csv") {
+
+            return {
+                format: "csv",
+                content: this.toCsv(statement)
+            };
+
+        }
+
+        return {
+            format: "json",
+            content: statement
+        };
+
+    }
+
+    /**
+     * ==========================================================
+     * Generate Statement (internal caller)
+     * ==========================================================
+     *
+     * Same statement, for a caller that has already been trusted
+     * by internalAuth (e.g. ussd-service, which has no customer
+     * JWT to check accountNumber ownership against - the internal
+     * token itself is the trust boundary here, not a per-request
+     * user match). Defaults to a short `limit` since this exists
+     * for a USSD mini-statement, not a full downloadable one -
+     * pass a larger `limit` explicitly if a caller needs more.
+     */
+    async generateForInternalCaller({ accountNumber, startDate, endDate, limit = 10 }) {
+
+        return this.buildStatement({
+            accountNumber,
+            startDate,
+            endDate,
+            limit
+        });
+
+    }
+
+    /**
+     * Shared core behind both generate() and
+     * generateForInternalCaller() - resolves the account, pulls
+     * and normalizes transactions, computes balances/summary.
+     * Callers are responsible for whatever authorization check
+     * applies to them before calling this.
+     */
+    async buildStatement({ accountNumber, startDate, endDate, limit }) {
+
         const account =
             await accountClient.getAccount(accountNumber);
 
@@ -43,7 +100,7 @@ class StatementService {
                 {
                     startDate: range.startDate,
                     endDate: range.endDate,
-                    limit: 500
+                    limit
                 }
             );
 
@@ -59,7 +116,7 @@ class StatementService {
         const summary =
             this.computeSummary(lines);
 
-        const statement = {
+        return {
 
             accountNumber: account.accountNumber,
 
@@ -75,20 +132,6 @@ class StatementService {
 
             transactions: lines
 
-        };
-
-        if (format === "csv") {
-
-            return {
-                format: "csv",
-                content: this.toCsv(statement)
-            };
-
-        }
-
-        return {
-            format: "json",
-            content: statement
         };
 
     }

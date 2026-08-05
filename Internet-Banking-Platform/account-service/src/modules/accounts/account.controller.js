@@ -123,6 +123,27 @@ const getByAccountNumber = async (req, res) => {
 };
 
 /**
+ * Get Balance By Account Number
+ *
+ * Internal-only live Fineract balance lookup - for callers
+ * (e.g. ussd-service) that have no customer JWT to use against
+ * GET /accounts/me.
+ */
+const getBalanceByAccountNumber = async (req, res) => {
+
+    const balance =
+        await accountService.getBalanceByAccountNumber(
+            req.params.accountNumber
+        );
+
+    return success(res, {
+        message: "Balance retrieved successfully.",
+        data: balance
+    });
+
+};
+
+/**
  * Get My Accounts
  *
  * Canonical customer-facing account endpoint - every account
@@ -242,6 +263,8 @@ module.exports = {
     getMyAccounts,
 
     getByAccountNumber,
+
+    getBalanceByAccountNumber,
 
     getByClientId,
 

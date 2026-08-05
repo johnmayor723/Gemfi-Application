@@ -170,4 +170,42 @@ describe("Statement Service", () => {
 
     });
 
+    test("generateForInternalCaller skips the ownership check entirely", async () => {
+
+        accountClient.getAccount.mockResolvedValue(account);
+
+        accountClient.getTransactions.mockResolvedValue({
+            transactions: fakeTransactions,
+            pagination: {}
+        });
+
+        // No `user` argument at all - an internal caller has no
+        // JWT-derived accountNumber to check against.
+        const result = await statementService.generateForInternalCaller({
+            accountNumber: "1111111111",
+            startDate: "2026-07-01",
+            endDate: "2026-07-31"
+        });
+
+        expect(result.closingBalance).toBe(1200);
+        expect(result.summary.transactionCount).toBe(3);
+
+    });
+
+    test("generateForInternalCaller defaults limit to 10 for a mini-statement, not 500", async () => {
+
+        accountClient.getAccount.mockResolvedValue(account);
+        accountClient.getTransactions.mockResolvedValue({ transactions: [], pagination: {} });
+
+        await statementService.generateForInternalCaller({
+            accountNumber: "1111111111"
+        });
+
+        expect(accountClient.getTransactions).toHaveBeenCalledWith(
+            "10",
+            expect.objectContaining({ limit: 10 })
+        );
+
+    });
+
 });

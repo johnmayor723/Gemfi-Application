@@ -194,6 +194,47 @@ class AccountService {
     }
 
     /**
+     * Get live Fineract balance for an internal caller (e.g.
+     * ussd-service, which has no customer JWT to use against
+     * GET /accounts/me). Unlike getMyAccounts(), a Fineract
+     * failure here is NOT swallowed into a null-balance summary -
+     * this endpoint exists solely to report a balance, so a
+     * failure to reach Fineract should surface as a real error
+     * for the caller to handle, not a silent 200 with nothing in
+     * it.
+     */
+    async getBalanceByAccountNumber(accountNumber) {
+
+        const account =
+            await this.getByAccountNumber(accountNumber);
+
+        const summary =
+            await fineract.getAccountSummary(
+                account.fineractAccountId
+            );
+
+        return {
+
+            accountNumber:
+                account.accountNumber,
+
+            currency:
+                summary.currency,
+
+            status:
+                summary.status,
+
+            ledgerBalance:
+                summary.ledgerBalance,
+
+            availableBalance:
+                summary.availableBalance
+
+        };
+
+    }
+
+    /**
      * Get by client id.
      */
     async getByClientId(clientId) {

@@ -129,6 +129,16 @@ router.get(
 );
 
 /**
+ * Live Fineract balance, for internal callers with no customer
+ * JWT (e.g. ussd-service).
+ */
+router.get(
+    "/internal/accounts/:accountNumber/balance",
+    internalAuth,
+    controller.getBalanceByAccountNumber
+);
+
+/**
  * Find by client ID.
  */
 router.get(
