@@ -16,7 +16,7 @@ const { adminLoginLimiter } = require("../../middleware/rate-limit.middleware");
  * Login
  */
 router.post(
-    "/admin/auth/login",
+    "/admin/agency/auth/login",
     adminLoginLimiter,
     validator.login,
     validate,
@@ -27,7 +27,7 @@ router.post(
  * Logout
  */
 router.post(
-    "/admin/auth/logout",
+    "/admin/agency/auth/logout",
     adminAuth,
     controller.logout
 );
@@ -36,7 +36,7 @@ router.post(
  * Session
  */
 router.get(
-    "/admin/auth/session",
+    "/admin/agency/auth/session",
     adminAuth,
     controller.session
 );

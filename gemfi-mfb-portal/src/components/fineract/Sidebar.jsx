@@ -6,10 +6,20 @@ import {
   ChevronRight, Package, Shield, Globe, DollarSign, FileText,
   Briefcase, FolderOpen, X, Menu, ArrowLeftRight, BarChart3, ShieldCheck,
   UserCheck, ScrollText, Database, ArrowDownLeft, ScanFace, Scale,
-  Wallet, PenSquare, Receipt, TrendingUp, Inbox, Sparkles
+  Wallet, PenSquare, Receipt, TrendingUp, Inbox, Sparkles, Handshake, Store
 } from 'lucide-react';
 import GemfiLogo from '@/components/fineract/GemfiLogo';
-import { useBranding } from '@/lib/branding';
+import { useBranding, isPlatformHost } from '@/lib/branding';
+
+// Users/Roles management is hidden from a tenant's own staff by default -
+// it controls how many staff accounts a tenant can create, which needs to
+// stay tied to their subscription tier rather than being fully
+// self-service. Visible when: this is GemFi's own platform host (staff
+// using demo.gemfitech.com, not a real tenant's -staff subdomain), or the
+// tenant is on the Enterprise tier (self-service is part of that tier).
+// Non-Enterprise tenants get user/role changes done for them via the
+// GemFi admin console instead.
+const USERS_ROLES_PATHS = new Set(['/system/users', '/system/roles']);
 
 const navSections = [
   {
@@ -79,6 +89,8 @@ const navSections = [
       { label: 'Audit Trail', path: '/audit-trail', icon: ScrollText },
       { label: 'Compliance', path: '/compliance', icon: ShieldCheck },
       { label: 'KYC Dashboard', path: '/kyc-dashboard', icon: ScanFace },
+      { label: 'Agency Banking', path: '/agents', icon: Handshake },
+      { label: 'Merchant Acquisition', path: '/merchants', icon: Store },
     ]
   },
   {
@@ -107,6 +119,7 @@ export default function Sidebar({ open, onClose }) {
   const location = useLocation();
   const branding = useBranding();
   const [collapsed, setCollapsed] = React.useState({});
+  const canManageUsersRoles = isPlatformHost(window.location.hostname) || branding.tier === 'enterprise';
 
   const toggle = (label) => {
     setCollapsed(prev => ({ ...prev, [label]: !prev[label] }));
@@ -139,6 +152,10 @@ export default function Sidebar({ open, onClose }) {
         <nav className="flex-1 overflow-y-auto py-3 px-3 space-y-1">
           {navSections.map(section => {
             const isCollapsed = collapsed[section.label];
+            const visibleItems = section.items.filter(
+              (item) => canManageUsersRoles || !USERS_ROLES_PATHS.has(item.path)
+            );
+            if (visibleItems.length === 0) return null;
             return (
               <div key={section.label}>
                 <button
@@ -150,7 +167,7 @@ export default function Sidebar({ open, onClose }) {
                 </button>
                 {!isCollapsed && (
                   <div className="space-y-0.5 mb-2">
-                    {section.items.map(item => {
+                    {visibleItems.map(item => {
                       const Icon = item.icon;
                       const active = location.pathname === item.path;
                       if (item.disabled) {

@@ -1,7 +1,8 @@
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { useBranding, isPlatformHost } from '@/lib/branding';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
@@ -57,6 +58,10 @@ import AuditTrail from '@/pages/AuditTrail';
 import Compliance from '@/pages/Compliance';
 import KycDashboard from '@/pages/KycDashboard';
 import CommercialOfferings from '@/pages/CommercialOfferings';
+import Agents from '@/pages/Agents';
+import AgentDetail from '@/pages/AgentDetail';
+import Merchants from '@/pages/Merchants';
+import MerchantDetail from '@/pages/MerchantDetail';
 
 /**
  * This app connects directly to an external Fineract API.
@@ -104,9 +109,9 @@ const AuthenticatedApp = () => {
         <Route path="/organization/staff" element={<Staff />} />
         <Route path="/organization/currencies" element={<Currencies />} />
         <Route path="/organization/funds" element={<Funds />} />
-        <Route path="/system/users" element={<Users />} />
-        <Route path="/system/roles" element={<Roles />} />
-        <Route path="/system/roles/:id" element={<RoleDetail />} />
+        <Route path="/system/users" element={<UsersRolesGuard><Users /></UsersRolesGuard>} />
+        <Route path="/system/roles" element={<UsersRolesGuard><Roles /></UsersRolesGuard>} />
+        <Route path="/system/roles/:id" element={<UsersRolesGuard><RoleDetail /></UsersRolesGuard>} />
         <Route path="/system/codes" element={<Codes />} />
         <Route path="/system/datatables" element={<DataTables />} />
         <Route path="/api-explorer" element={<ApiExplorer />} />
@@ -117,11 +122,25 @@ const AuthenticatedApp = () => {
         <Route path="/compliance" element={<Compliance />} />
         <Route path="/kyc-dashboard" element={<KycDashboard />} />
         <Route path="/commercial-offerings" element={<CommercialOfferings />} />
+        <Route path="/agents" element={<Agents />} />
+        <Route path="/agents/:id" element={<AgentDetail />} />
+        <Route path="/merchants" element={<Merchants />} />
+        <Route path="/merchants/:id" element={<MerchantDetail />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
 };
+
+// Guards direct navigation to Users/Roles routes the same way Sidebar hides
+// their nav links - hiding the link alone doesn't stop someone typing the
+// URL in directly. See Sidebar.jsx for the full rationale.
+function UsersRolesGuard({ children }) {
+  const branding = useBranding();
+  const canManageUsersRoles = isPlatformHost(window.location.hostname) || branding.tier === 'enterprise';
+  if (!canManageUsersRoles) return <Navigate to="/" replace />;
+  return children;
+}
 
 function App() {
   return (

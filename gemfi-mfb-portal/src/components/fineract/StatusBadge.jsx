@@ -8,6 +8,7 @@ const statusStyles = {
   submittedandpendingapproval: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
   closed: 'bg-slate-500/15 text-slate-400 border-slate-500/30',
   rejected: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
+  suspended: 'bg-orange-500/15 text-orange-400 border-orange-500/30',
   withdrawn: 'bg-slate-500/15 text-slate-400 border-slate-500/30',
   withdrawnbyapplicant: 'bg-slate-500/15 text-slate-400 border-slate-500/30',
   disbursed: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
