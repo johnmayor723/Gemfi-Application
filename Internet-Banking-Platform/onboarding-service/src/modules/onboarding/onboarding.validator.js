@@ -4,6 +4,7 @@ const {
 } = require("../../validators");
 
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
+const TIERS = ["starter", "professional", "enterprise"];
 
 const submit = [
 
@@ -43,7 +44,13 @@ const submit = [
         .notEmpty()
         .withMessage("Secondary color is required.")
         .matches(HEX_COLOR)
-        .withMessage("Secondary color must be a 6-digit hex color, e.g. #E3DDF0.")
+        .withMessage("Secondary color must be a 6-digit hex color, e.g. #E3DDF0."),
+
+    body("tier")
+        .optional()
+        .trim()
+        .isIn(TIERS)
+        .withMessage(`Tier must be one of: ${TIERS.join(", ")}.`)
 
 ];
 
@@ -96,7 +103,13 @@ const update = [
 
     body("roles").optional().isArray(),
 
-    body("chartOfAccountsConfirmed").optional().isBoolean()
+    body("chartOfAccountsConfirmed").optional().isBoolean(),
+
+    body("tier")
+        .optional()
+        .trim()
+        .isIn(TIERS)
+        .withMessage(`Tier must be one of: ${TIERS.join(", ")}.`)
 
 ];
 
@@ -123,6 +136,50 @@ const setStatus = [
 
 ];
 
+const createTenantUser = [
+
+    ...getById,
+
+    body("username")
+        .trim()
+        .notEmpty()
+        .withMessage("Username is required."),
+
+    body("firstname")
+        .trim()
+        .notEmpty()
+        .withMessage("First name is required."),
+
+    body("lastname")
+        .trim()
+        .notEmpty()
+        .withMessage("Last name is required."),
+
+    body("email")
+        .trim()
+        .notEmpty()
+        .withMessage("Email is required.")
+        .isEmail()
+        .withMessage("Invalid email."),
+
+    body("officeId")
+        .notEmpty()
+        .withMessage("Office is required."),
+
+    body("roles")
+        .isArray({ min: 1 })
+        .withMessage("At least one role is required."),
+
+    body("password")
+        .notEmpty()
+        .withMessage("Password is required."),
+
+    body("repeatPassword")
+        .notEmpty()
+        .withMessage("Password confirmation is required.")
+
+];
+
 module.exports = {
 
     submit,
@@ -137,6 +194,8 @@ module.exports = {
 
     reject,
 
-    setStatus
+    setStatus,
+
+    createTenantUser
 
 };

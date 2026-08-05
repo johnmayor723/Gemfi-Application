@@ -11,6 +11,9 @@ export default defineConfig({
     },
   },
   server: {
-    allowedHosts: ['ib-demo.gemfitech.com'],
+    // ib-demo is GemFi's own demo host; the leading-dot pattern additionally
+    // allows any live tenant subdomain (acme.gemfitech.com, etc.) proxied
+    // here by the Gateway's wildcard tenant routing.
+    allowedHosts: ['ib-demo.gemfitech.com', '.gemfitech.com'],
   },
 });

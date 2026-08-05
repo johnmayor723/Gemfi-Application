@@ -80,6 +80,7 @@ export async function createRequest(payload) {
   if (payload.contactAddress) formData.append('contactAddress', payload.contactAddress);
   formData.append('primaryColor', payload.primaryColor);
   formData.append('secondaryColor', payload.secondaryColor);
+  formData.append('tier', payload.tier || 'starter');
   if (payload.logo) formData.append('logo', payload.logo);
 
   const body = await authedFetch(ENDPOINTS.admin.create, {
@@ -117,6 +118,24 @@ export async function setRequestStatus(id, status) {
   const body = await authedFetch(ENDPOINTS.admin.setStatus(id), {
     method: 'PATCH',
     body: JSON.stringify({ status }),
+  });
+  return body.data;
+}
+
+export async function listTenantUsers(id) {
+  const body = await authedFetch(ENDPOINTS.admin.tenantUsers(id));
+  return body.data;
+}
+
+export async function listTenantRoles(id) {
+  const body = await authedFetch(ENDPOINTS.admin.tenantRoles(id));
+  return body.data;
+}
+
+export async function createTenantUser(id, payload) {
+  const body = await authedFetch(ENDPOINTS.admin.tenantUsers(id), {
+    method: 'POST',
+    body: JSON.stringify(payload),
   });
   return body.data;
 }

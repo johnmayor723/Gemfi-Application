@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fineractApi } from '@/lib/fineract';
-import { Plus, Loader2, KeyRound, Power, PowerOff, Eye } from 'lucide-react';
+import { Plus, Loader2, KeyRound, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,11 +14,14 @@ export default function Users() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
+  const [showEdit, setShowEdit] = useState(null);
   const [showReset, setShowReset] = useState(null);
+  const [showDelete, setShowDelete] = useState(null);
   const [saving, setSaving] = useState(false);
   const [offices, setOffices] = useState([]);
   const [roles, setRoles] = useState([]);
-  const [form, setForm] = useState({ username: '', firstname: '', lastname: '', email: '', officeId: '', roleIds: [], password: '', repeatPassword: '', sendPasswordToEmail: false, passwordNeverExpires: true, isSelfServiceUser: false });
+  const [form, setForm] = useState({ username: '', firstname: '', lastname: '', email: '', officeId: '', roleIds: [], password: '', repeatPassword: '', sendPasswordToEmail: false, passwordNeverExpires: true });
+  const [editForm, setEditForm] = useState({ username: '', firstname: '', lastname: '', email: '', officeId: '', roleIds: [] });
   const [resetForm, setResetForm] = useState({ password: '', repeatPassword: '' });
 
   const loadUsers = async () => {
@@ -52,10 +55,9 @@ export default function Users() {
         lastname: form.lastname,
         email: form.email,
         officeId: parseInt(form.officeId),
-        roles: form.roleIds.map(id => ({ id: parseInt(id) })),
+        roles: form.roleIds.map(id => parseInt(id)),
         sendPasswordToEmail: form.sendPasswordToEmail,
         passwordNeverExpires: form.passwordNeverExpires,
-        isSelfServiceUser: form.isSelfServiceUser,
       };
       if (!form.sendPasswordToEmail) {
         body.password = form.password;
@@ -64,7 +66,7 @@ export default function Users() {
       await fineractApi('/users', { method: 'POST', body });
       toast({ title: 'User created successfully' });
       setShowCreate(false);
-      setForm({ username: '', firstname: '', lastname: '', email: '', officeId: '', roleIds: [], password: '', repeatPassword: '', sendPasswordToEmail: false, passwordNeverExpires: true, isSelfServiceUser: false });
+      setForm({ username: '', firstname: '', lastname: '', email: '', officeId: '', roleIds: [], password: '', repeatPassword: '', sendPasswordToEmail: false, passwordNeverExpires: true });
       loadUsers();
     } catch (err) {
       toast({ title: 'Validation Error', description: err.message, variant: 'destructive' });
@@ -73,13 +75,51 @@ export default function Users() {
     }
   };
 
-  const toggleUser = async (user) => {
+  const openEdit = (user) => {
+    setEditForm({
+      username: user.username || '',
+      firstname: user.firstname || '',
+      lastname: user.lastname || '',
+      email: user.email || '',
+      officeId: user.officeId ? String(user.officeId) : '',
+      roleIds: (user.selectedRoles || []).map(r => r.id),
+    });
+    setShowEdit(user);
+  };
+
+  const handleEdit = async () => {
+    setSaving(true);
     try {
-      await fineractApi(`/users/${user.id}`, { method: 'PUT', body: { enabled: !user.enabled } });
-      toast({ title: `User ${!user.enabled ? 'enabled' : 'disabled'}` });
+      const body = {
+        username: editForm.username,
+        firstname: editForm.firstname,
+        lastname: editForm.lastname,
+        email: editForm.email,
+        officeId: parseInt(editForm.officeId),
+        roles: editForm.roleIds.map(id => parseInt(id)),
+      };
+      await fineractApi(`/users/${showEdit.id}`, { method: 'PUT', body });
+      toast({ title: 'User updated successfully' });
+      setShowEdit(null);
       loadUsers();
     } catch (err) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    setSaving(true);
+    try {
+      await fineractApi(`/users/${showDelete.id}`, { method: 'DELETE' });
+      toast({ title: 'User deleted' });
+      setShowDelete(null);
+      loadUsers();
+    } catch (err) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -105,6 +145,10 @@ export default function Users() {
     setForm(p => ({ ...p, roleIds: p.roleIds.includes(roleId) ? p.roleIds.filter(id => id !== roleId) : [...p.roleIds, roleId] }));
   };
 
+  const toggleEditRole = (roleId) => {
+    setEditForm(p => ({ ...p, roleIds: p.roleIds.includes(roleId) ? p.roleIds.filter(id => id !== roleId) : [...p.roleIds, roleId] }));
+  };
+
   const columns = [
     { key: 'id', label: 'ID' },
     { key: 'username', label: 'Username' },
@@ -116,11 +160,14 @@ export default function Users() {
     { key: 'lastTimeLogin', label: 'Last Login', render: v => v || 'Never' },
     { key: 'actions', label: 'Actions', render: (_, row) => (
       <div className="flex gap-1">
-        <Button size="sm" variant="ghost" onClick={() => toggleUser(row)} className={`h-7 px-2 text-xs ${row.enabled ? 'text-rose-400 hover:text-rose-300' : 'text-emerald-400 hover:text-emerald-300'}`}>
-          {row.enabled ? <><PowerOff className="w-3 h-3 mr-1" />Disable</> : <><Power className="w-3 h-3 mr-1" />Enable</>}
+        <Button size="sm" variant="ghost" onClick={() => openEdit(row)} className="text-sky-400 hover:text-sky-300 h-7 px-2 text-xs">
+          <Pencil className="w-3 h-3 mr-1" />Edit
         </Button>
         <Button size="sm" variant="ghost" onClick={() => { setShowReset(row); setResetForm({ password: '', repeatPassword: '' }); }} className="text-amber-400 hover:text-amber-300 h-7 px-2 text-xs">
           <KeyRound className="w-3 h-3 mr-1" />Reset
+        </Button>
+        <Button size="sm" variant="ghost" onClick={() => setShowDelete(row)} className="text-rose-400 hover:text-rose-300 h-7 px-2 text-xs">
+          <Trash2 className="w-3 h-3 mr-1" />Delete
         </Button>
       </div>
     )},
@@ -185,10 +232,6 @@ export default function Users() {
                 <input type="checkbox" checked={form.passwordNeverExpires} onChange={e => setForm(p => ({ ...p, passwordNeverExpires: e.target.checked }))} className="w-4 h-4 accent-emerald-600" />
                 <span className="text-sm text-slate-300">Password never expires</span>
               </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={form.isSelfServiceUser} onChange={e => setForm(p => ({ ...p, isSelfServiceUser: e.target.checked }))} className="w-4 h-4 accent-emerald-600" />
-                <span className="text-sm text-slate-300">Self-service user</span>
-              </label>
             </div>
             {!form.sendPasswordToEmail && (
               <div className="grid grid-cols-2 gap-4">
@@ -230,6 +273,73 @@ export default function Users() {
             <Button variant="ghost" onClick={() => setShowReset(null)} className="text-slate-400">Cancel</Button>
             <Button onClick={handleResetPassword} disabled={saving || !resetForm.password} className="bg-emerald-600 hover:bg-emerald-700">
               {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} Reset
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit User Dialog */}
+      <Dialog open={!!showEdit} onOpenChange={() => setShowEdit(null)}>
+        <DialogContent className="bg-slate-900 border-slate-700 text-white max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Edit User — {showEdit?.username}</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-slate-300 text-xs">Username *</Label>
+              <Input value={editForm.username} onChange={e => setEditForm(p => ({ ...p, username: e.target.value }))} className="mt-1 bg-slate-800 border-slate-700 text-white" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-slate-300 text-xs">First Name *</Label>
+                <Input value={editForm.firstname} onChange={e => setEditForm(p => ({ ...p, firstname: e.target.value }))} className="mt-1 bg-slate-800 border-slate-700 text-white" />
+              </div>
+              <div>
+                <Label className="text-slate-300 text-xs">Last Name *</Label>
+                <Input value={editForm.lastname} onChange={e => setEditForm(p => ({ ...p, lastname: e.target.value }))} className="mt-1 bg-slate-800 border-slate-700 text-white" />
+              </div>
+            </div>
+            <div>
+              <Label className="text-slate-300 text-xs">Email *</Label>
+              <Input type="email" value={editForm.email} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} className="mt-1 bg-slate-800 border-slate-700 text-white" />
+            </div>
+            <div>
+              <Label className="text-slate-300 text-xs">Office *</Label>
+              <select value={editForm.officeId} onChange={e => setEditForm(p => ({ ...p, officeId: e.target.value }))} className="mt-1 w-full h-9 px-3 rounded-md bg-slate-800 border border-slate-700 text-white text-sm">
+                <option value="">Select office</option>
+                {offices.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <Label className="text-slate-300 text-xs">Roles * (assign at least one)</Label>
+              <div className="mt-1 space-y-1 max-h-32 overflow-y-auto border border-slate-700 rounded-lg p-2">
+                {roles.map(r => (
+                  <label key={r.id} className="flex items-center gap-2 p-1.5 rounded hover:bg-slate-800 cursor-pointer">
+                    <input type="checkbox" checked={editForm.roleIds.includes(r.id)} onChange={() => toggleEditRole(r.id)} className="w-4 h-4 accent-emerald-600" />
+                    <span className="text-sm text-slate-300">{r.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setShowEdit(null)} className="text-slate-400">Cancel</Button>
+            <Button onClick={handleEdit} disabled={saving || !editForm.username || !editForm.firstname || !editForm.lastname || !editForm.email || !editForm.officeId || editForm.roleIds.length === 0} className="bg-emerald-600 hover:bg-emerald-700">
+              {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete User Dialog */}
+      <Dialog open={!!showDelete} onOpenChange={() => setShowDelete(null)}>
+        <DialogContent className="bg-slate-900 border-slate-700 text-white max-w-sm">
+          <DialogHeader><DialogTitle>Delete User — {showDelete?.username}</DialogTitle></DialogHeader>
+          <p className="text-sm text-slate-400">
+            This permanently deactivates the account. The user will no longer be able to log in, and this cannot be undone.
+          </p>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setShowDelete(null)} className="text-slate-400">Cancel</Button>
+            <Button onClick={handleDelete} disabled={saving} className="bg-rose-600 hover:bg-rose-700">
+              {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} Delete User
             </Button>
           </DialogFooter>
         </DialogContent>

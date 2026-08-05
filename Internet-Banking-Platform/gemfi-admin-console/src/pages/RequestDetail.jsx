@@ -1,12 +1,20 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Loader2, Plus, X, ShieldCheck, Rocket, PauseCircle, Ban } from 'lucide-react';
-import { getRequest, updateRequest, approveRequest, rejectRequest, setRequestStatus } from '@/api/admin.api';
+import { ArrowLeft, Loader2, Plus, X, ShieldCheck, Rocket, PauseCircle, Ban, UserPlus, Copy } from 'lucide-react';
+import {
+  getRequest, updateRequest, approveRequest, rejectRequest, setRequestStatus,
+  listTenantUsers, listTenantRoles, createTenantUser,
+} from '@/api/admin.api';
 import { ENDPOINTS } from '@/api/endpoints';
 import AppLayout from '@/components/AppLayout';
 import { STATUS_META } from '@/lib/statusMeta';
 
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
+const TIERS = [
+  { value: 'starter', label: 'Starter' },
+  { value: 'professional', label: 'Professional' },
+  { value: 'enterprise', label: 'Enterprise' },
+];
 
 function Field({ label, children }) {
   return (
@@ -14,6 +22,189 @@ function Field({ label, children }) {
       {label}
       <div className="mt-2">{children}</div>
     </label>
+  );
+}
+
+// Generates a password meeting Fineract's own policy (12-50 chars, upper
+// + lower + digit + special, no immediately-repeating character) so the
+// "Create user" form always submits a valid password on the first try
+// instead of making the admin guess at the regex.
+function generateCompliantPassword() {
+  const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const lower = 'abcdefghijkmnpqrstuvwxyz';
+  const digits = '23456789';
+  const special = '!@#$%&*?';
+  const all = upper + lower + digits + special;
+
+  let password;
+  do {
+    const chars = [
+      upper[Math.floor(Math.random() * upper.length)],
+      lower[Math.floor(Math.random() * lower.length)],
+      digits[Math.floor(Math.random() * digits.length)],
+      special[Math.floor(Math.random() * special.length)],
+    ];
+    while (chars.length < 14) chars.push(all[Math.floor(Math.random() * all.length)]);
+    // Shuffle so the required classes aren't always in the same positions.
+    for (let i = chars.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [chars[i], chars[j]] = [chars[j], chars[i]];
+    }
+    password = chars.join('');
+  } while (/(.)\1/.test(password)); // reject and retry on any repeated-adjacent char
+
+  return password;
+}
+
+/**
+ * Remote Fineract user/role management for an active tenant - this is
+ * what "available on the GemFi admin console" means for tenants whose own
+ * portal hides Users/Roles (anything below the Enterprise tier). GemFi
+ * staff use this panel to create/view a tenant's staff logins on their
+ * behalf.
+ */
+function TenantUsersPanel({ requestId }) {
+  const [users, setUsers] = useState([]);
+  const [roles, setRoles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [createdCreds, setCreatedCreds] = useState(null);
+  const [form, setForm] = useState({ username: '', firstname: '', lastname: '', email: '', roleId: '' });
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const [usersRes, rolesRes] = await Promise.all([
+        listTenantUsers(requestId),
+        listTenantRoles(requestId),
+      ]);
+      setUsers(usersRes);
+      setRoles(rolesRes.filter((r) => !r.disabled));
+    } catch (err) {
+      setError(err.body?.message || err.message || 'Unable to load tenant users.');
+    } finally {
+      setLoading(false);
+    }
+  }, [requestId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const set = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setError('');
+    const password = generateCompliantPassword();
+    try {
+      await createTenantUser(requestId, {
+        username: form.username,
+        firstname: form.firstname,
+        lastname: form.lastname,
+        email: form.email,
+        officeId: 1, // every tenant currently has a single "Head Office"
+        roles: [Number(form.roleId)],
+        sendPasswordToEmail: false,
+        password,
+        repeatPassword: password,
+      });
+      setCreatedCreds({ username: form.username, password });
+      setForm({ username: '', firstname: '', lastname: '', email: '', roleId: '' });
+      setShowForm(false);
+      load();
+    } catch (err) {
+      setError(err.body?.message || err.message || 'Unable to create this user.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="rounded-xl border border-border p-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="font-semibold">Tenant users</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Managed here on the tenant's behalf - only Enterprise-tier tenants get this in their own portal.
+          </p>
+        </div>
+        <button
+          onClick={() => { setShowForm((v) => !v); setCreatedCreds(null); }}
+          className="shrink-0 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+        >
+          <UserPlus className="h-4 w-4" /> New user
+        </button>
+      </div>
+
+      {error && <p className="mt-3 text-sm text-destructive bg-destructive/10 p-3 rounded-lg">{error}</p>}
+
+      {createdCreds && (
+        <div className="mt-3 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
+          <p className="font-medium">User created - share these credentials securely:</p>
+          <div className="mt-2 flex items-center gap-2 font-mono">
+            <span>{createdCreds.username} / {createdCreds.password}</span>
+            <button
+              type="button"
+              onClick={() => navigator.clipboard.writeText(`${createdCreds.username} / ${createdCreds.password}`)}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <Copy className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1.5">This won't be shown again - copy it now.</p>
+        </div>
+      )}
+
+      {showForm && (
+        <form onSubmit={submit} className="mt-4 space-y-3 border-t border-border pt-4">
+          <div className="grid sm:grid-cols-2 gap-3">
+            <input required value={form.username} onChange={set('username')} placeholder="Username"
+              className="border border-input rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary" />
+            <select required value={form.roleId} onChange={set('roleId')}
+              className="border border-input rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary">
+              <option value="" disabled>Role</option>
+              {roles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+            </select>
+            <input required value={form.firstname} onChange={set('firstname')} placeholder="First name"
+              className="border border-input rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary" />
+            <input required value={form.lastname} onChange={set('lastname')} placeholder="Last name"
+              className="border border-input rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary" />
+            <input required type="email" value={form.email} onChange={set('email')} placeholder="Email"
+              className="border border-input rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary sm:col-span-2" />
+          </div>
+          <button
+            disabled={saving}
+            className="bg-primary text-primary-foreground font-semibold rounded-lg px-4 py-2 text-sm disabled:opacity-60 flex items-center gap-2"
+          >
+            {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            {saving ? 'Creating…' : 'Create user'}
+          </button>
+        </form>
+      )}
+
+      {loading ? (
+        <div className="mt-4 flex justify-center text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+        </div>
+      ) : (
+        <div className="mt-4 divide-y divide-border">
+          {users.map((u) => (
+            <div key={u.id} className="py-2.5 flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-sm font-medium truncate">{u.firstname} {u.lastname} <span className="text-muted-foreground font-normal">({u.username})</span></p>
+                <p className="text-xs text-muted-foreground truncate">{u.email}</p>
+              </div>
+              <span className="text-xs text-muted-foreground shrink-0">
+                {u.selectedRoles?.map((r) => r.name).join(', ') || '—'}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -84,6 +275,7 @@ export default function RequestDetail() {
     contactAddress: request.contactAddress,
     primaryColor: request.primaryColor,
     secondaryColor: request.secondaryColor,
+    tier: request.tier,
   });
 
   const addRole = () => {
@@ -234,6 +426,37 @@ export default function RequestDetail() {
                   className="w-full border border-input rounded-lg px-3.5 py-2.5 focus:ring-2 focus:ring-primary disabled:bg-muted disabled:text-muted-foreground"
                 />
               </Field>
+              <Field label="Tier">
+                <div className="flex items-center gap-2">
+                  <select
+                    value={request.tier || 'starter'}
+                    onChange={set('tier')}
+                    className="w-full border border-input rounded-lg px-3.5 py-2.5 focus:ring-2 focus:ring-primary"
+                  >
+                    {TIERS.map((t) => (
+                      <option key={t.value} value={t.value}>{t.label}</option>
+                    ))}
+                  </select>
+                  {/* Pending requests save tier along with everything else
+                      via the main "Save changes" button below. Once a
+                      tenant is live, only tier can still change - this
+                      button covers that case with its own dedicated
+                      tier-only update. */}
+                  {!isPending && (
+                    <button
+                      type="button"
+                      onClick={() => save({ tier: request.tier })}
+                      disabled={saving}
+                      className="shrink-0 text-sm font-medium text-primary hover:underline disabled:opacity-60"
+                    >
+                      Save
+                    </button>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  Enterprise tenants get self-service Users &amp; Roles management in their own portal; Starter/Professional tenants have that done for them from here. Can be changed at any time, even after the tenant is live.
+                </p>
+              </Field>
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Primary color">
                   <div className="flex items-center gap-3">
@@ -331,12 +554,15 @@ export default function RequestDetail() {
               </label>
             </div>
           )}
+
+          {isActive && <TenantUsersPanel requestId={request._id} />}
         </div>
 
         <div className="space-y-6">
           <div className="rounded-xl border border-border p-5">
             <h2 className="font-semibold">Tenant info</h2>
             <div className="mt-3">
+              <ReadOnlyRow label="Tier" value={TIERS.find((t) => t.value === request.tier)?.label || request.tier} />
               <ReadOnlyRow label="Fineract tenant" value={request.fineractTenantIdentifier} mono />
               <ReadOnlyRow label="Submitted by" value={request.submittedBy} />
               <ReadOnlyRow label="Reviewed by" value={request.reviewedBy} />

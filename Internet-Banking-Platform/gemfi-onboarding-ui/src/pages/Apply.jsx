@@ -16,7 +16,15 @@ const DEFAULTS = {
   contactAddress: '',
   primaryColor: '#0D766E',
   secondaryColor: '#FF832E',
+  tier: 'starter',
 };
+
+// Matches the three tiers published on gemfitech.com/resources/offering.
+const TIERS = [
+  { value: 'starter', label: 'Starter', description: 'Shared multi-tenant platform, GemFi-managed users & roles.' },
+  { value: 'professional', label: 'Professional', description: 'Everything in Starter, plus higher usage limits.' },
+  { value: 'enterprise', label: 'Enterprise', description: 'Dedicated, isolated deployment, self-service users & roles.' },
+];
 
 function Field({ label, error, children }) {
   return (
@@ -46,6 +54,30 @@ function ColorField({ label, value, onChange, error }) {
           className="flex-1 border border-input rounded-lg px-3 py-2.5 font-mono text-sm uppercase focus:ring-2 focus:ring-primary"
           placeholder="#0D766E"
         />
+      </div>
+    </Field>
+  );
+}
+
+function TierField({ value, onChange }) {
+  return (
+    <Field label="Plan">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        {TIERS.map((tier) => (
+          <button
+            type="button"
+            key={tier.value}
+            onClick={() => onChange(tier.value)}
+            className={`text-left rounded-lg border px-3.5 py-2.5 transition-colors ${
+              value === tier.value
+                ? 'border-primary ring-2 ring-primary bg-primary/5'
+                : 'border-input hover:border-primary/50'
+            }`}
+          >
+            <span className="block text-sm font-semibold">{tier.label}</span>
+            <span className="block text-xs text-muted-foreground mt-0.5">{tier.description}</span>
+          </button>
+        ))}
       </div>
     </Field>
   );
@@ -196,6 +228,8 @@ export default function Apply() {
                 placeholder="Street, city, state"
               />
             </Field>
+
+            <TierField value={form.tier} onChange={(v) => setForm((f) => ({ ...f, tier: v }))} />
 
             <div className="grid grid-cols-2 gap-4">
               <ColorField label="Primary color" value={form.primaryColor} onChange={(v) => setForm((f) => ({ ...f, primaryColor: v }))} error={errors.primaryColor} />

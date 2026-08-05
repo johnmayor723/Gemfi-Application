@@ -14,6 +14,8 @@ export const ENDPOINTS = {
     reject: (id) => `${BASE}/admin/onboarding/requests/${id}/reject`,
     approve: (id) => `${BASE}/admin/onboarding/requests/${id}/approve`,
     setStatus: (id) => `${BASE}/admin/onboarding/requests/${id}/status`,
+    tenantUsers: (id) => `${BASE}/admin/onboarding/requests/${id}/fineract/users`,
+    tenantRoles: (id) => `${BASE}/admin/onboarding/requests/${id}/fineract/roles`,
   },
   logo: (id) => `${BASE}/onboarding/requests/${id}/logo`,
 };

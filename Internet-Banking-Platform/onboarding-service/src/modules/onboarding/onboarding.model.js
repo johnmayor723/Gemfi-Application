@@ -85,6 +85,23 @@ const OnboardingRequestSchema = new mongoose.Schema(
             index: true
         },
 
+        /**
+         * Subscription tier - drives self-service capability in the
+         * portal (e.g. only "enterprise" tenants get the Users/Roles
+         * management UI in gemfi-mfb-portal; lower tiers get that done
+         * for them via the GemFi admin console instead). Matches the
+         * three tiers published on gemfitech.com/resources/offering.
+         */
+        tier: {
+            type: String,
+            enum: [
+                "starter",
+                "professional",
+                "enterprise"
+            ],
+            default: "starter"
+        },
+
         status: {
             type: String,
             enum: [

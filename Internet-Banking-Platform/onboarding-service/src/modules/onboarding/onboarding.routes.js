@@ -152,4 +152,34 @@ router.patch(
     controller.setStatus
 );
 
+/**
+ * Remote Fineract user/role management for an active tenant - lets GemFi
+ * staff manage users/roles on behalf of tenants whose portal doesn't
+ * expose this (anything below the Enterprise tier - see
+ * gemfi-mfb-portal's Sidebar for the matching client-side gate).
+ */
+router.get(
+    "/admin/onboarding/requests/:id/fineract/users",
+    adminAuth,
+    validator.getById,
+    validate,
+    controller.listTenantUsers
+);
+
+router.post(
+    "/admin/onboarding/requests/:id/fineract/users",
+    adminAuth,
+    validator.createTenantUser,
+    validate,
+    controller.createTenantUser
+);
+
+router.get(
+    "/admin/onboarding/requests/:id/fineract/roles",
+    adminAuth,
+    validator.getById,
+    validate,
+    controller.listTenantRoles
+);
+
 module.exports = router;

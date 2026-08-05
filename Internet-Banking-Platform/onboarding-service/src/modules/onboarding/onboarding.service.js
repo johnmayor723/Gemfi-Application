@@ -13,6 +13,25 @@ const { CLASSES: CHART_OF_ACCOUNTS } = require("./chart-of-accounts.seed");
 
 const { app: config, logger } = require("../../config");
 
+/**
+ * NGN first - every GemFi tenant is a Nigerian MFB - plus the other major
+ * currencies a cross-border-capable bank is likely to need. USD is already
+ * selected by default on a fresh Fineract tenant; included here anyway so
+ * this list is the tenant's complete, final selection, not an add-on to an
+ * assumed default.
+ */
+const MAJOR_CURRENCY_CODES = [
+    "NGN",
+    "USD",
+    "EUR",
+    "GBP",
+    "KES",
+    "ZAR",
+    "JPY",
+    "CNY",
+    "INR"
+];
+
 const {
     NotFoundError,
     ConflictError,
@@ -111,6 +130,8 @@ class OnboardingService {
 
             submittedBy,
 
+            tier: payload.tier || "starter",
+
             status: "pending"
 
         });
@@ -208,6 +229,12 @@ class OnboardingService {
      * tenant - pending/rejected/disabled all 404, same as an
      * unknown subdomain, so this can't be used to probe the
      * pending queue.
+     *
+     * Also doubles as the Gateway's tenant-resolution source:
+     * fineractTenantIdentifier lets the Gateway map a Host header
+     * straight to a Fineract tenant without a second endpoint -
+     * the frontend branding consumers simply ignore the extra
+     * field.
      * ======================================================
      */
     async getBranding(subdomain) {
@@ -232,7 +259,11 @@ class OnboardingService {
 
             primaryColor: request.primaryColor,
 
-            secondaryColor: request.secondaryColor
+            secondaryColor: request.secondaryColor,
+
+            fineractTenantIdentifier: request.fineractTenantIdentifier,
+
+            tier: request.tier
 
         };
 
@@ -308,7 +339,19 @@ class OnboardingService {
 
         const request = await this.getById(id);
 
-        if (request.status !== "pending") {
+        /**
+         * Every other field here is a one-time setup detail, locked once
+         * a tenant goes live. Tier is different - it's an ongoing
+         * subscription plan a tenant can upgrade/downgrade at any time,
+         * not something that only makes sense before approval - so a
+         * tier-only update is allowed regardless of status.
+         */
+        const payloadKeys = Object.keys(payload);
+        const isTierOnlyChange =
+            payloadKeys.length > 0 &&
+            payloadKeys.every((key) => key === "tier");
+
+        if (request.status !== "pending" && !isTierOnlyChange) {
 
             throw new ConflictError(
                 `Cannot edit a request that is already ${request.status}.`
@@ -338,7 +381,8 @@ class OnboardingService {
             "primaryColor",
             "secondaryColor",
             "roles",
-            "chartOfAccountsConfirmed"
+            "chartOfAccountsConfirmed",
+            "tier"
         ].forEach((field) => {
 
             if (payload[field] !== undefined) {
@@ -487,6 +531,18 @@ class OnboardingService {
          */
         await fineractClient.warmUp(fineractTenantIdentifier);
 
+        /**
+         * A fresh Fineract tenant only has USD selected by default -
+         * every GemFi tenant needs NGN at minimum (Nigerian MFBs), plus a
+         * handful of other major currencies so a tenant isn't blocked on
+         * a manual Fineract config step before they can even pick a
+         * currency for their first product.
+         */
+        await fineractClient.enableCurrencies(
+            fineractTenantIdentifier,
+            MAJOR_CURRENCY_CODES
+        );
+
         await this._seedChartOfAccounts(fineractTenantIdentifier);
 
         await this._seedRoles(fineractTenantIdentifier, request.roles);
@@ -595,6 +651,77 @@ class OnboardingService {
             );
 
         }
+
+    }
+
+    /**
+     * ======================================================
+     * Admin: resolve an active tenant's Fineract identifier
+     * ----------------------------------------------------------
+     * Shared guard for the remote user/role management endpoints below -
+     * only a fully-provisioned, active tenant has a real Fineract schema
+     * to manage users/roles on.
+     * ======================================================
+     */
+    async _requireActiveFineractTenant(id) {
+
+        const request = await this.getById(id);
+
+        if (request.status !== "active" || !request.fineractTenantIdentifier) {
+
+            throw new BusinessRuleError(
+                "This tenant has not been provisioned yet."
+            );
+
+        }
+
+        return request.fineractTenantIdentifier;
+
+    }
+
+    /**
+     * ======================================================
+     * Admin: List tenant users
+     * ----------------------------------------------------------
+     * Lets GemFi staff manage a tenant's Fineract users remotely from the
+     * admin console - the tenant's own portal only exposes this to
+     * Enterprise-tier tenants (self-service); everyone else gets it done
+     * for them from here.
+     * ======================================================
+     */
+    async listTenantUsers(id) {
+
+        const tenantIdentifier = await this._requireActiveFineractTenant(id);
+
+        return fineractClient.listUsers(tenantIdentifier);
+
+    }
+
+    /**
+     * ======================================================
+     * Admin: Create a tenant user
+     * ======================================================
+     */
+    async createTenantUser(id, payload) {
+
+        const tenantIdentifier = await this._requireActiveFineractTenant(id);
+
+        return fineractClient.createUser(tenantIdentifier, payload);
+
+    }
+
+    /**
+     * ======================================================
+     * Admin: List tenant roles
+     * ----------------------------------------------------------
+     * Backs the role picker alongside listTenantUsers/createTenantUser.
+     * ======================================================
+     */
+    async listTenantRoles(id) {
+
+        const tenantIdentifier = await this._requireActiveFineractTenant(id);
+
+        return fineractClient.listRoles(tenantIdentifier);
 
     }
 

@@ -18,6 +18,7 @@ export async function submitOnboardingRequest(payload) {
   if (payload.contactAddress) formData.append('contactAddress', payload.contactAddress);
   formData.append('primaryColor', payload.primaryColor);
   formData.append('secondaryColor', payload.secondaryColor);
+  formData.append('tier', payload.tier);
   if (payload.logo) formData.append('logo', payload.logo);
 
   const response = await fetch(ENDPOINTS.onboarding.submit, {

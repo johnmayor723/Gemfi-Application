@@ -23,6 +23,7 @@ const GEMFI_STATIC = {
   logoUrl: null, // null + isDynamic:false + isResolving:false => bundled GemFi asset
   primaryColor: null,
   secondaryColor: null,
+  tier: null,
   isDynamic: false,
   isResolving: false,
 };
@@ -40,6 +41,7 @@ const NEUTRAL_STATE = {
   logoUrl: null,
   primaryColor: null,
   secondaryColor: null,
+  tier: null,
   isDynamic: false,
   isResolving: true,
 };
@@ -50,18 +52,29 @@ const RETRY_DELAYS_MS = [1000, 2000, 4000];
 const BACKGROUND_RETRY_MS = 10000;
 const BACKGROUND_RETRY_ATTEMPTS = 6;
 
-function isPlatformHost(hostname) {
+/**
+ * Exported so callers that need to gate on "is this GemFi's own platform
+ * vs. a tenant's" (e.g. Sidebar/route guards deciding whether Users &
+ * Roles management is visible) don't have to re-derive the same host list.
+ */
+export function isPlatformHost(hostname) {
   return GEMFI_PLATFORM_HOSTS.includes(hostname);
 }
 
 /**
- * The tenant subdomain is just the leftmost hostname label -
- * matches how onboarding-service derives `subdomain` from the
- * company name at submission time.
+ * The tenant subdomain is the leftmost hostname label - matches
+ * how onboarding-service derives `subdomain` from the company
+ * name at submission time. This app specifically is only ever
+ * served on the "-staff" sibling of a tenant's main subdomain
+ * (see the Gateway's parseTenantHost) since the wildcard cert
+ * only covers one hostname label deep - strip that suffix so
+ * this resolves to the same onboarding record gemfi-connect
+ * uses, not a distinct (nonexistent) "-staff" subdomain.
  */
 function subdomainFromHostname(hostname) {
   const label = hostname.split('.')[0];
-  return label || null;
+  if (!label) return null;
+  return label.endsWith('-staff') ? label.slice(0, -'-staff'.length) : label;
 }
 
 function readCache(subdomain) {
@@ -161,6 +174,7 @@ async function fetchBranding(subdomain, { retries = RETRY_DELAYS_MS.length } = {
           logoUrl: body.data.logoUrl ? `${ONBOARDING_BASE}${body.data.logoUrl}` : null,
           primaryColor: body.data.primaryColor || null,
           secondaryColor: body.data.secondaryColor || null,
+          tier: body.data.tier || 'starter',
         },
       };
     } catch {

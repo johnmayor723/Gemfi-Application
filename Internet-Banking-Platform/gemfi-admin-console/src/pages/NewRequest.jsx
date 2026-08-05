@@ -16,7 +16,14 @@ const DEFAULTS = {
   contactAddress: '',
   primaryColor: '#0D766E',
   secondaryColor: '#FF832E',
+  tier: 'starter',
 };
+
+const TIERS = [
+  { value: 'starter', label: 'Starter' },
+  { value: 'professional', label: 'Professional' },
+  { value: 'enterprise', label: 'Enterprise' },
+];
 
 function Field({ label, error, children }) {
   return (
@@ -159,6 +166,18 @@ export default function NewRequest() {
             className="w-full border border-input rounded-lg px-3.5 py-2.5 focus:ring-2 focus:ring-primary"
             placeholder="Street, city, state"
           />
+        </Field>
+
+        <Field label="Tier">
+          <select
+            value={form.tier}
+            onChange={set('tier')}
+            className="w-full border border-input rounded-lg px-3.5 py-2.5 focus:ring-2 focus:ring-primary"
+          >
+            {TIERS.map((t) => (
+              <option key={t.value} value={t.value}>{t.label}</option>
+            ))}
+          </select>
         </Field>
 
         <div className="grid grid-cols-2 gap-4">

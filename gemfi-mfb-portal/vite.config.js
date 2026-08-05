@@ -17,6 +17,9 @@ export default defineConfig({
     react(),
   ],
   server: {
-    allowedHosts: ['demo.gemfitech.com'],
+    // demo is GemFi's own demo host; the leading-dot pattern additionally
+    // allows any live tenant's staff-portal subdomain (acme-staff.gemfitech.com,
+    // etc.) proxied here by the Gateway's wildcard tenant routing.
+    allowedHosts: ['demo.gemfitech.com', '.gemfitech.com'],
   },
 });

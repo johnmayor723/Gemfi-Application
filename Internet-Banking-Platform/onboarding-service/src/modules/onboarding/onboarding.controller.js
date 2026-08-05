@@ -243,6 +243,54 @@ const setStatus = async (req, res) => {
 
 };
 
+/**
+ * Admin: List tenant users
+ *
+ * GET /admin/onboarding/requests/:id/fineract/users
+ */
+const listTenantUsers = async (req, res) => {
+
+    const users = await service.listTenantUsers(req.params.id);
+
+    return success(res, {
+        message: "Tenant users retrieved successfully.",
+        data: users
+    });
+
+};
+
+/**
+ * Admin: Create a tenant user
+ *
+ * POST /admin/onboarding/requests/:id/fineract/users
+ */
+const createTenantUser = async (req, res) => {
+
+    const user = await service.createTenantUser(req.params.id, req.body);
+
+    return created(res, {
+        message: "Tenant user created.",
+        data: user
+    });
+
+};
+
+/**
+ * Admin: List tenant roles
+ *
+ * GET /admin/onboarding/requests/:id/fineract/roles
+ */
+const listTenantRoles = async (req, res) => {
+
+    const roles = await service.listTenantRoles(req.params.id);
+
+    return success(res, {
+        message: "Tenant roles retrieved successfully.",
+        data: roles
+    });
+
+};
+
 module.exports = {
 
     submit,
@@ -265,6 +313,12 @@ module.exports = {
 
     approve,
 
-    setStatus
+    setStatus,
+
+    listTenantUsers,
+
+    createTenantUser,
+
+    listTenantRoles
 
 };

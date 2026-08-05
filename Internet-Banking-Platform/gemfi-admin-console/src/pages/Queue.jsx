@@ -5,6 +5,8 @@ import { listRequests } from '@/api/admin.api';
 import AppLayout from '@/components/AppLayout';
 import { STATUS_META, STATUS_FILTERS } from '@/lib/statusMeta';
 
+const TIER_LABELS = { starter: 'Starter', professional: 'Professional', enterprise: 'Enterprise' };
+
 export default function Queue() {
   const [status, setStatus] = useState('pending');
   const [requests, setRequests] = useState([]);
@@ -77,6 +79,9 @@ export default function Queue() {
                 </div>
                 <div className="flex items-center gap-4 shrink-0">
                   <span className="text-xs text-muted-foreground hidden sm:inline">{req.submittedBy}</span>
+                  <span className="text-xs font-medium text-muted-foreground border border-border rounded-full px-2.5 py-1 hidden sm:inline">
+                    {TIER_LABELS[req.tier] || 'Starter'}
+                  </span>
                   {meta && (
                     <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${meta.className}`}>
                       <Icon className="h-3.5 w-3.5" />
