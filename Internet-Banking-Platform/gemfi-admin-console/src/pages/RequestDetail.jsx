@@ -84,7 +84,7 @@ function TenantUsersPanel({ requestId }) {
       setUsers(usersRes);
       setRoles(rolesRes.filter((r) => !r.disabled));
     } catch (err) {
-      setError(err.body?.message || err.message || 'Unable to load tenant users.');
+      setError(err.body?.message || err.message || 'Unable to load users.');
     } finally {
       setLoading(false);
     }
@@ -126,9 +126,9 @@ function TenantUsersPanel({ requestId }) {
     <div className="rounded-xl border border-border p-5">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="font-semibold">Tenant users</h2>
+          <h2 className="font-semibold">Organization users</h2>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Managed here on the tenant's behalf - only Enterprise-tier tenants get this in their own portal.
+            Managed here on the organization's behalf - only Enterprise-tier organizations get this in their own portal.
           </p>
         </div>
         <button
@@ -438,8 +438,8 @@ export default function RequestDetail() {
                     ))}
                   </select>
                   {/* Pending requests save tier along with everything else
-                      via the main "Save changes" button below. Once a
-                      tenant is live, only tier can still change - this
+                      via the main "Save changes" button below. Once the
+                      organization is live, only tier can still change - this
                       button covers that case with its own dedicated
                       tier-only update. */}
                   {!isPending && (
@@ -454,7 +454,7 @@ export default function RequestDetail() {
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1.5">
-                  Enterprise tenants get self-service Users &amp; Roles management in their own portal; Starter/Professional tenants have that done for them from here. Can be changed at any time, even after the tenant is live.
+                  Enterprise organizations get self-service Users &amp; Roles management in their own portal; Starter/Professional organizations have that done for them from here. Can be changed at any time, even after the organization is live.
                 </p>
               </Field>
               <div className="grid grid-cols-2 gap-4">
@@ -507,7 +507,7 @@ export default function RequestDetail() {
 
           <div className="rounded-xl border border-border p-5">
             <h2 className="font-semibold">Roles</h2>
-            <p className="text-sm text-muted-foreground mt-1">Seeded on this tenant's Fineract instance at approval.</p>
+            <p className="text-sm text-muted-foreground mt-1">Seeded on this organization's GemFi Core instance at approval.</p>
             <div className="mt-3 flex flex-wrap gap-2">
               {request.roles.map((role) => (
                 <span key={role} className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-sm">
@@ -548,7 +548,7 @@ export default function RequestDetail() {
                 <span>
                   <span className="font-medium">Chart of accounts confirmed</span>
                   <p className="text-sm text-muted-foreground mt-0.5">
-                    Required before approval. Approving seeds the standard chart of accounts and roles on a new Fineract tenant.
+                    Required before approval. Approving seeds the standard chart of accounts and roles on a new GemFi Core organization.
                   </p>
                 </span>
               </label>
@@ -560,10 +560,10 @@ export default function RequestDetail() {
 
         <div className="space-y-6">
           <div className="rounded-xl border border-border p-5">
-            <h2 className="font-semibold">Tenant info</h2>
+            <h2 className="font-semibold">Organization info</h2>
             <div className="mt-3">
               <ReadOnlyRow label="Tier" value={TIERS.find((t) => t.value === request.tier)?.label || request.tier} />
-              <ReadOnlyRow label="Fineract tenant" value={request.fineractTenantIdentifier} mono />
+              <ReadOnlyRow label="GemFi Core ID" value={request.fineractTenantIdentifier} mono />
               <ReadOnlyRow label="Submitted by" value={request.submittedBy} />
               <ReadOnlyRow label="Reviewed by" value={request.reviewedBy} />
               <ReadOnlyRow label="Reviewed at" value={request.reviewedAt ? new Date(request.reviewedAt).toLocaleString() : null} />
@@ -582,11 +582,11 @@ export default function RequestDetail() {
                   className="w-full bg-primary text-primary-foreground font-semibold rounded-xl py-3 disabled:opacity-60 flex items-center justify-center gap-2"
                 >
                   {approving ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
-                  {approving ? `Provisioning tenant… ${approveSeconds}s elapsed` : 'Approve & provision'}
+                  {approving ? `Provisioning organization… ${approveSeconds}s elapsed` : 'Approve & provision'}
                 </button>
                 {approving && (
                   <p className="text-xs text-muted-foreground">
-                    Creating the Fineract tenant, seeding its chart of accounts and roles - this normally takes 2-4 minutes. Stay on this page; it will update automatically when it's done.
+                    Creating the GemFi Core organization, seeding its chart of accounts and roles - this normally takes 2-4 minutes. Stay on this page; it will update automatically when it's done.
                   </p>
                 )}
                 {!approving && !request.chartOfAccountsConfirmed && (
@@ -610,7 +610,7 @@ export default function RequestDetail() {
                 className="w-full border border-input font-semibold rounded-xl py-3 disabled:opacity-60 flex items-center justify-center gap-2"
               >
                 <PauseCircle className="h-4 w-4" />
-                Disable tenant
+                Disable organization
               </button>
             )}
 
@@ -621,7 +621,7 @@ export default function RequestDetail() {
                 className="w-full bg-primary text-primary-foreground font-semibold rounded-xl py-3 disabled:opacity-60 flex items-center justify-center gap-2"
               >
                 <Rocket className="h-4 w-4" />
-                Re-enable tenant
+                Re-enable organization
               </button>
             )}
 

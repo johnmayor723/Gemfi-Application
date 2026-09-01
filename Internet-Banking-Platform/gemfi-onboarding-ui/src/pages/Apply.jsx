@@ -21,7 +21,7 @@ const DEFAULTS = {
 
 // Matches the three tiers published on gemfitech.com/resources/offering.
 const TIERS = [
-  { value: 'starter', label: 'Starter', description: 'Shared multi-tenant platform, GemFi-managed users & roles.' },
+  { value: 'starter', label: 'Starter', description: 'Shared platform, GemFi-managed users & roles.' },
   { value: 'professional', label: 'Professional', description: 'Everything in Starter, plus higher usage limits.' },
   { value: 'enterprise', label: 'Enterprise', description: 'Dedicated, isolated deployment, self-service users & roles.' },
 ];
@@ -178,7 +178,7 @@ export default function Apply() {
             <h1 className="text-4xl font-bold text-balance">Bring your bank onto GEMFI</h1>
             <p className="mt-5 text-slate-300 max-w-md">
               Tell us about your institution and your brand — we'll provision your own core banking
-              tenant, complete with your colors and logo across the portal and internet banking app.
+              instance, complete with your colors and logo across the portal and internet banking app.
             </p>
           </div>
           <p className="text-xs text-slate-500">GEMFI — Core Banking Platform</p>
@@ -191,7 +191,7 @@ export default function Apply() {
             <Building2 className="h-5 w-5" />
           </span>
           <h2 className="text-2xl font-bold mt-4">Partner application</h2>
-          <p className="text-muted-foreground mt-1">A GEMFI admin will review your details before your tenant is provisioned.</p>
+          <p className="text-muted-foreground mt-1">A GEMFI admin will review your details before your instance is provisioned.</p>
           {apiError && <p className="mt-5 text-sm text-destructive bg-destructive/10 p-3 rounded-lg">{apiError}</p>}
           <form onSubmit={submit} className="mt-6 space-y-4">
             <Field label="Institution name" error={errors.companyName}>

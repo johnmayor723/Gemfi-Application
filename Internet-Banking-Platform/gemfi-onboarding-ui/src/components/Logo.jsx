@@ -8,7 +8,7 @@ export default function Logo({ className = '', light = false }) {
     <img
       src={light ? logoDark : logoLight}
       alt="GEMFI"
-      className={`${large ? 'h-12' : 'h-9'} w-auto ${className}`}
+      className={`${large ? 'h-12' : 'h-9'} w-auto self-start shrink-0 ${className}`}
     />
   );
 }

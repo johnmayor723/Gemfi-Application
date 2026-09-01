@@ -38,7 +38,7 @@ export default function Login() {
             <ShieldCheck className="h-5 w-5" />
           </span>
           <h1 className="mt-4 text-2xl font-bold">Admin console</h1>
-          <p className="mt-1 text-muted-foreground">Sign in with your Fineract admin credentials.</p>
+          <p className="mt-1 text-muted-foreground">Sign in with your GemFi Core admin credentials.</p>
         </div>
 
         {error && <p className="mt-5 text-sm text-destructive bg-destructive/10 p-3 rounded-lg">{error}</p>}

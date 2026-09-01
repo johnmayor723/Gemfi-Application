@@ -33,7 +33,7 @@ export default function Queue() {
   return (
     <AppLayout>
       <h1 className="text-2xl font-bold">Onboarding requests</h1>
-      <p className="text-muted-foreground mt-1">Review, provision, and manage tenant applications.</p>
+      <p className="text-muted-foreground mt-1">Review, provision, and manage applications.</p>
 
       <div className="mt-6 flex gap-2 border-b border-border overflow-x-auto">
         {['all', ...STATUS_FILTERS].map((tab) => (

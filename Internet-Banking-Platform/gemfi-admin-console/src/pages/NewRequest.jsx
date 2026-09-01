@@ -125,7 +125,7 @@ export default function NewRequest() {
 
       <h1 className="mt-4 text-2xl font-bold">New onboarding request</h1>
       <p className="text-muted-foreground mt-1">
-        Blank-start a tenant from phone/email contact — for prospects who didn't self-serve through the application form.
+        Blank-start an application from phone/email contact — for prospects who didn't self-serve through the application form.
       </p>
 
       {apiError && <p className="mt-5 text-sm text-destructive bg-destructive/10 p-3 rounded-lg">{apiError}</p>}
