@@ -91,12 +91,17 @@ class TransferService {
         }
 
         /**
-         * NIP transfers go to another bank — the dummy adapter
-         * doesn't perform real cross-bank lookups, so only
-         * format-validate. Everything else must resolve against
-         * an account Account Service actually knows about.
+         * NIP transfers go to another bank. §9.1.1.ii of the NPS
+         * guide makes an acmt.023 name enquiry mandatory before
+         * any such transfer — the sending institution is liable
+         * for a misdirected payment where it's skipped — so this
+         * confirms the beneficiary up front, same as how an
+         * internal transfer already resolves its destination
+         * account below.
          */
         let type = "NIP";
+
+        let beneficiaryName = null;
 
         if (!destinationBankCode) {
 
@@ -110,6 +115,16 @@ class TransferService {
                 destinationAccount.clientId === sourceAccount.clientId
                     ? "OWN_ACCOUNT"
                     : "INTERNAL";
+
+        } else {
+
+            const enquiry =
+                await nibssAdapter.nameEnquiry({
+                    destinationBankCode,
+                    destinationAccountNumber
+                });
+
+            beneficiaryName = enquiry.accountName;
 
         }
 
@@ -129,6 +144,11 @@ class TransferService {
 
                 destinationBankCode:
                     type === "NIP" ? destinationBankCode : null,
+
+                nibss:
+                    beneficiaryName
+                        ? { beneficiaryName }
+                        : undefined,
 
                 type,
 
@@ -193,6 +213,12 @@ class TransferService {
             expiresAt: otpResult.expiresAt
 
         };
+
+        if (beneficiaryName) {
+
+            response.beneficiaryName = beneficiaryName;
+
+        }
 
         /**
          * Expose the plaintext OTP outside production so the
@@ -333,6 +359,10 @@ class TransferService {
 
         let sourceAccount = null;
 
+        let nibssIdentifiers = null;
+
+        let reconciledViaStatusQuery = false;
+
         try {
 
             sourceAccount =
@@ -343,7 +373,7 @@ class TransferService {
 
             if (transfer.type === "NIP") {
 
-                const result =
+                let result =
                     await nibssAdapter.initiateNip({
 
                         sourceAccountNumber:
@@ -363,11 +393,41 @@ class TransferService {
 
                     });
 
+                nibssIdentifiers = {
+
+                    messageId: result.messageId || null,
+
+                    transactionId: result.transactionId || null,
+
+                    endToEndId: result.endToEndId || null
+
+                };
+
                 if (result.status !== "SUCCESSFUL") {
 
-                    throw new BusinessRuleError(
-                        "NIP transfer failed."
-                    );
+                    /**
+                     * Before failing, confirm with NIBSS directly
+                     * via a pacs.028 status query (NPS guide §10/
+                     * §11) — a TIMEOUT here doesn't necessarily
+                     * mean the payment failed; NIBSS's own side
+                     * may have settled it after our local wait
+                     * gave up.
+                     */
+                    result =
+                        await this.reconcileNipStatus(
+                            transfer,
+                            result
+                        );
+
+                    if (result.status !== "SUCCESSFUL") {
+
+                        throw new BusinessRuleError(
+                            "NIP transfer failed."
+                        );
+
+                    }
+
+                    reconciledViaStatusQuery = true;
 
                 }
 
@@ -409,7 +469,20 @@ class TransferService {
                         status: "SUCCESSFUL",
                         message: "Transfer completed successfully.",
                         extra: {
-                            completedAt: new Date()
+
+                            completedAt: new Date(),
+
+                            ...(nibssIdentifiers
+                                ? {
+                                    nibss: {
+                                        beneficiaryName:
+                                            transfer.nibss?.beneficiaryName || null,
+                                        ...nibssIdentifiers,
+                                        reconciled: reconciledViaStatusQuery
+                                    }
+                                }
+                                : {})
+
                         }
                     }
                 );
@@ -444,6 +517,64 @@ class TransferService {
             );
 
             throw error;
+
+        }
+
+    }
+
+    /**
+     * ==========================================================
+     * Reconcile NIP Status
+     * ==========================================================
+     *
+     * Confirms a non-SUCCESSFUL initiateNip() result against
+     * NIBSS directly via a pacs.028 status query before the
+     * transfer is marked failed (NPS guide §10: finality is
+     * defined by receipt of pacs.002, not by our own local
+     * timeout; §11: exception handling). Falls back to the
+     * original result — still treated as failed — if the status
+     * query itself fails, rather than blocking on it.
+     */
+    async reconcileNipStatus(transfer, result) {
+
+        try {
+
+            const status =
+                await nibssAdapter.getPaymentStatus({
+
+                    messageId: result.messageId,
+
+                    transactionId: result.transactionId,
+
+                    endToEndId: result.endToEndId,
+
+                    destinationBankCode: transfer.destinationBankCode
+
+                });
+
+            logger.info(
+                {
+                    transferId: transfer.id,
+                    reference: transfer.reference,
+                    status: status.status
+                },
+                "Reconciled NIP status via pacs.028 before finalizing."
+            );
+
+            return status;
+
+        } catch (error) {
+
+            logger.warn(
+                {
+                    transferId: transfer.id,
+                    reference: transfer.reference,
+                    error: { message: error.message }
+                },
+                "pacs.028 reconciliation failed — proceeding with the original result."
+            );
+
+            return result;
 
         }
 

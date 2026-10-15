@@ -141,6 +141,12 @@ describe("Transfer Service", () => {
             otpService.sendTransferOtp.mockResolvedValue({ expiresAt: new Date(), code: "111111", channel: "SMS" });
             repository.updateStatus.mockResolvedValue({});
 
+            nibssAdapter.nameEnquiry.mockResolvedValue({
+                accountName: "JOHN DOE",
+                accountStatus: "ACTIVE",
+                provider: "DUMMY"
+            });
+
             await transferService.initiate(
                 user,
                 { destinationAccountNumber: "3333333333", destinationBankCode: "058", amount: 5000 },
@@ -153,9 +159,42 @@ describe("Transfer Service", () => {
 
             /**
              * NIP transfers must not attempt to resolve the
-             * destination via Account Service (it's another bank).
+             * destination via Account Service (it's another bank)
+             * — they resolve it via NIBSS name enquiry instead.
              */
             expect(accountClient.getAccount).toHaveBeenCalledTimes(1);
+            expect(nibssAdapter.nameEnquiry).toHaveBeenCalledWith({
+                destinationBankCode: "058",
+                destinationAccountNumber: "3333333333"
+            });
+
+        });
+
+        test("surfaces the acmt.023 beneficiary name for NIP transfers (NPS guide §9.1.1.ii)", async () => {
+
+            accountClient.getAccount.mockResolvedValue(sourceAccount);
+            limitsService.check.mockResolvedValue(undefined);
+            fraudService.assess.mockResolvedValue({ decision: "ALLOW", reasons: [] });
+            repository.create.mockResolvedValue({ id: "transfer-3" });
+            otpService.sendTransferOtp.mockResolvedValue({ expiresAt: new Date(), code: "333333", channel: "SMS" });
+            repository.updateStatus.mockResolvedValue({});
+
+            nibssAdapter.nameEnquiry.mockResolvedValue({
+                accountName: "JOHN DOE",
+                accountStatus: "ACTIVE",
+                provider: "DUMMY"
+            });
+
+            const result = await transferService.initiate(
+                user,
+                { destinationAccountNumber: "3333333333", destinationBankCode: "058", amount: 5000 },
+                fakeRequest()
+            );
+
+            expect(result.beneficiaryName).toBe("JOHN DOE");
+            expect(repository.create).toHaveBeenCalledWith(
+                expect.objectContaining({ nibss: { beneficiaryName: "JOHN DOE" } })
+            );
 
         });
 
@@ -237,6 +276,149 @@ describe("Transfer Service", () => {
 
             expect(nibssAdapter.initiateNip).toHaveBeenCalled();
             expect(fineractClient.postWithdrawal).not.toHaveBeenCalled();
+
+        });
+
+        /**
+         * NPS guide §11 exception matrix: a non-SUCCESSFUL result
+         * gets a pacs.028 reconciliation check before the transfer
+         * is marked failed — these three tests cover "still failed
+         * after reconciling", "actually settled after reconciling"
+         * (the §3.2.C late-response case), and "reconciliation
+         * itself fails".
+         */
+        test("fails a declined NIP transfer after pacs.028 confirms it failed", async () => {
+
+            repository.findById.mockResolvedValue({
+                ...pendingTransfer,
+                type: "NIP",
+                destinationBankCode: "058"
+            });
+
+            otpService.verifyTransferOtp.mockResolvedValue(true);
+
+            nibssAdapter.initiateNip.mockResolvedValue({
+                status: "FAILED",
+                messageId: "MSG1",
+                transactionId: "TXN1",
+                endToEndId: "E2E1"
+            });
+
+            nibssAdapter.getPaymentStatus.mockResolvedValue({
+                status: "FAILED",
+                reasonCode: "AC04"
+            });
+
+            limitsService.recordUsage.mockResolvedValue(undefined);
+
+            repository.transitionStatus.mockResolvedValue({
+                ...pendingTransfer,
+                type: "NIP",
+                destinationBankCode: "058",
+                status: "PROCESSING"
+            });
+
+            repository.updateStatus.mockResolvedValue({});
+
+            await expect(
+                transferService.confirm(user, "transfer-1", "123456", fakeRequest())
+            ).rejects.toThrow("NIP transfer failed.");
+
+            expect(nibssAdapter.getPaymentStatus).toHaveBeenCalledWith(
+                expect.objectContaining({ transactionId: "TXN1" })
+            );
+
+        });
+
+        test("treats a NIP transfer as successful when pacs.028 reconciliation finds it actually settled", async () => {
+
+            repository.findById.mockResolvedValue({
+                ...pendingTransfer,
+                type: "NIP",
+                destinationBankCode: "058"
+            });
+
+            otpService.verifyTransferOtp.mockResolvedValue(true);
+
+            nibssAdapter.initiateNip.mockResolvedValue({
+                status: "TIMEOUT",
+                messageId: "MSG2",
+                transactionId: "TXN2",
+                endToEndId: "E2E2"
+            });
+
+            nibssAdapter.getPaymentStatus.mockResolvedValue({
+                status: "SUCCESSFUL",
+                reasonCode: null
+            });
+
+            limitsService.recordUsage.mockResolvedValue(undefined);
+
+            repository.transitionStatus.mockResolvedValue({
+                ...pendingTransfer,
+                type: "NIP",
+                destinationBankCode: "058",
+                status: "PROCESSING"
+            });
+
+            repository.updateStatus.mockResolvedValue({
+                id: "transfer-1",
+                reference: "TXN123",
+                status: "SUCCESSFUL"
+            });
+
+            const result = await transferService.confirm(user, "transfer-1", "123456", fakeRequest());
+
+            expect(result.status).toBe("SUCCESSFUL");
+
+            expect(repository.updateStatus).toHaveBeenCalledWith(
+                "transfer-1",
+                expect.objectContaining({
+                    status: "SUCCESSFUL",
+                    extra: expect.objectContaining({
+                        nibss: expect.objectContaining({
+                            transactionId: "TXN2",
+                            reconciled: true
+                        })
+                    })
+                })
+            );
+
+        });
+
+        test("fails a NIP transfer when pacs.028 reconciliation itself fails", async () => {
+
+            repository.findById.mockResolvedValue({
+                ...pendingTransfer,
+                type: "NIP",
+                destinationBankCode: "058"
+            });
+
+            otpService.verifyTransferOtp.mockResolvedValue(true);
+
+            nibssAdapter.initiateNip.mockResolvedValue({
+                status: "TIMEOUT",
+                messageId: "MSG3",
+                transactionId: "TXN3",
+                endToEndId: "E2E3"
+            });
+
+            nibssAdapter.getPaymentStatus.mockRejectedValue(new Error("NIBSS is unreachable."));
+
+            limitsService.recordUsage.mockResolvedValue(undefined);
+
+            repository.transitionStatus.mockResolvedValue({
+                ...pendingTransfer,
+                type: "NIP",
+                destinationBankCode: "058",
+                status: "PROCESSING"
+            });
+
+            repository.updateStatus.mockResolvedValue({});
+
+            await expect(
+                transferService.confirm(user, "transfer-1", "123456", fakeRequest())
+            ).rejects.toThrow("NIP transfer failed.");
 
         });
 

@@ -172,6 +172,43 @@ const TransferSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: "Transfer",
             default: null
+        },
+
+        /**
+         * NIBSS NPS identifiers and name-enquiry result for a
+         * NIP transfer. messageId/transactionId/endToEndId are
+         * set at execution time (needed to issue a pacs.028
+         * status query later); beneficiaryName is set at
+         * initiate() time from the acmt.023 name enquiry that
+         * must precede the transfer (NPS guide §9.1.1.ii).
+         */
+        nibss: {
+
+            messageId: {
+                type: String,
+                default: null
+            },
+
+            transactionId: {
+                type: String,
+                default: null
+            },
+
+            endToEndId: {
+                type: String,
+                default: null
+            },
+
+            beneficiaryName: {
+                type: String,
+                default: null
+            },
+
+            reconciled: {
+                type: Boolean,
+                default: false
+            }
+
         }
     },
     {
