@@ -5,9 +5,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import PageHeader from '@/components/fineract/PageHeader';
 import KpiCard from '@/components/fineract/KpiCard';
 import GrowthChart from '@/components/fineract/GrowthChart';
+import { useTerminology } from '@/lib/terminology';
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const t = useTerminology();
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [recentClients, setRecentClients] = useState([]);
@@ -63,10 +65,10 @@ export default function Dashboard() {
 
   const quickActions = [
     { label: 'Create Customer', path: '/clients?action=create', icon: Users, color: 'emerald' },
-    { label: 'Open Savings', path: '/savings?action=create', icon: PiggyBank, color: 'amber' },
+    t.showSavings && { label: `Open ${t.savings.replace(/s$/, '')}`, path: '/savings?action=create', icon: PiggyBank, color: 'amber' },
     { label: 'New Loan', path: '/loans?action=create', icon: CreditCard, color: 'blue' },
     { label: 'Transactions', path: '/transactions', icon: ArrowLeftRight, color: 'purple' },
-  ];
+  ].filter(Boolean);
 
   const colorMap = {
     emerald: 'border-emerald-500/20 hover:bg-emerald-500/10 text-emerald-400',
@@ -82,20 +84,20 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <KpiCard label="Total Customers" value={stats.clients} icon={Users} color="emerald" loading={loading} trend={12} />
-        <KpiCard label="Active Savings" value={stats.activeSavings} icon={PiggyBank} color="amber" loading={loading} trend={8} />
+        {t.showSavings && <KpiCard label={`Active ${t.savings}`} value={stats.activeSavings} icon={PiggyBank} color="amber" loading={loading} trend={8} />}
         <KpiCard label="Active Loans" value={stats.activeLoans} icon={CreditCard} color="blue" loading={loading} trend={5} />
         <KpiCard label="Branches" value={stats.offices} icon={Building2} color="purple" loading={loading} />
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <KpiCard label="Total Loans" value={stats.loans} icon={CreditCard} color="blue" loading={loading} />
-        <KpiCard label="Savings Accounts" value={stats.savings} icon={PiggyBank} color="amber" loading={loading} />
+        {t.showSavings && <KpiCard label={t.savingsAccounts} value={stats.savings} icon={PiggyBank} color="amber" loading={loading} />}
         <KpiCard label="Active Users" value={stats.users} icon={UserCheck} color="emerald" loading={loading} />
         <KpiCard label="Portfolio Value" value={stats.loans} icon={Wallet} color="orange" loading={loading} prefix="₦" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         <GrowthChart key={`loan-${stats.loans}`} title="Loan Growth" data={loanGrowth} dataKey="loans" color="#3b82f6" />
-        <GrowthChart key={`deposit-${stats.savings}`} title="Deposit Growth" data={depositGrowth} dataKey="deposits" color="#f59e0b" />
+        {t.showSavings && <GrowthChart key={`deposit-${stats.savings}`} title={`${t.deposit} Growth`} data={depositGrowth} dataKey="deposits" color="#f59e0b" />}
         <GrowthChart key={`customer-${stats.clients}`} title="Customer Growth" data={customerGrowth} dataKey="customers" color="#10b981" />
       </div>
 

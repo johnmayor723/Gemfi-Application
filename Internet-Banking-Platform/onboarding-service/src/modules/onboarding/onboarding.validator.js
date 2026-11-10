@@ -5,6 +5,7 @@ const {
 
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 const TIERS = ["starter", "professional", "enterprise"];
+const INSTITUTION_TYPES = ["bank", "cooperative", "loan_company"];
 
 const submit = [
 
@@ -50,7 +51,13 @@ const submit = [
         .optional()
         .trim()
         .isIn(TIERS)
-        .withMessage(`Tier must be one of: ${TIERS.join(", ")}.`)
+        .withMessage(`Tier must be one of: ${TIERS.join(", ")}.`),
+
+    body("institutionType")
+        .optional()
+        .trim()
+        .isIn(INSTITUTION_TYPES)
+        .withMessage(`Institution type must be one of: ${INSTITUTION_TYPES.join(", ")}.`)
 
 ];
 
@@ -109,7 +116,13 @@ const update = [
         .optional()
         .trim()
         .isIn(TIERS)
-        .withMessage(`Tier must be one of: ${TIERS.join(", ")}.`)
+        .withMessage(`Tier must be one of: ${TIERS.join(", ")}.`),
+
+    body("institutionType")
+        .optional()
+        .trim()
+        .isIn(INSTITUTION_TYPES)
+        .withMessage(`Institution type must be one of: ${INSTITUTION_TYPES.join(", ")}.`)
 
 ];
 

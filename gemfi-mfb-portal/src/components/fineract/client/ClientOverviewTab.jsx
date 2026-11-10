@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom';
 import { CreditCard, PiggyBank, FileText, UserCheck, UserX, Edit, Upload, IdCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import StatusBadge from '@/components/fineract/StatusBadge';
+import { useTerminology } from '@/lib/terminology';
 
 export default function ClientOverviewTab({ client, accounts, onEdit, onActivate, onClose, onApplyLoan }) {
+  const t = useTerminology();
   const Field = ({ label, value }) => (
     <div>
       <dt className="text-[11px] text-slate-500 font-medium uppercase tracking-wider">{label}</dt>
@@ -24,11 +26,13 @@ export default function ClientOverviewTab({ client, accounts, onEdit, onActivate
           <div className="text-xl font-bold text-white">{loanCount}</div>
           <div className="text-[11px] text-slate-500 uppercase">Loans</div>
         </div>
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4">
-          <PiggyBank className="w-4 h-4 text-amber-400 mb-2" />
-          <div className="text-xl font-bold text-white">{savingsCount}</div>
-          <div className="text-[11px] text-slate-500 uppercase">Savings</div>
-        </div>
+        {t.showSavings && (
+          <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4">
+            <PiggyBank className="w-4 h-4 text-amber-400 mb-2" />
+            <div className="text-xl font-bold text-white">{savingsCount}</div>
+            <div className="text-[11px] text-slate-500 uppercase">{t.savings}</div>
+          </div>
+        )}
         <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4">
           <UserCheck className="w-4 h-4 text-emerald-400 mb-2" />
           <div className="text-xl font-bold text-white">{client.status?.value || '—'}</div>
@@ -37,15 +41,17 @@ export default function ClientOverviewTab({ client, accounts, onEdit, onActivate
         <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4">
           <FileText className="w-4 h-4 text-purple-400 mb-2" />
           <div className="text-xl font-bold text-white">{client.accountNo}</div>
-          <div className="text-[11px] text-slate-500 uppercase">Client No.</div>
+          <div className="text-[11px] text-slate-500 uppercase">{t.clientSingular} No.</div>
         </div>
       </div>
 
       {/* Quick Actions */}
       <div className="flex flex-wrap gap-2">
-        <Button size="sm" asChild className="bg-emerald-600 hover:bg-emerald-700">
-          <Link to={`/savings?action=create&clientId=${client.id}`}><PiggyBank className="w-3.5 h-3.5 mr-1" /> Open Savings</Link>
-        </Button>
+        {t.showSavings && (
+          <Button size="sm" asChild className="bg-emerald-600 hover:bg-emerald-700">
+            <Link to={`/savings?action=create&clientId=${client.id}`}><PiggyBank className="w-3.5 h-3.5 mr-1" /> Open {t.savings.replace(/s$/, '')}</Link>
+          </Button>
+        )}
         <Button size="sm" onClick={onApplyLoan} className="bg-blue-600 hover:bg-blue-700">
           <CreditCard className="w-3.5 h-3.5 mr-1" /> Apply for Loan
         </Button>

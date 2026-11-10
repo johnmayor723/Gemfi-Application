@@ -132,6 +132,8 @@ class OnboardingService {
 
             tier: payload.tier || "starter",
 
+            institutionType: payload.institutionType || "bank",
+
             status: "pending"
 
         });
@@ -263,7 +265,9 @@ class OnboardingService {
 
             fineractTenantIdentifier: request.fineractTenantIdentifier,
 
-            tier: request.tier
+            tier: request.tier,
+
+            institutionType: request.institutionType
 
         };
 
@@ -382,7 +386,8 @@ class OnboardingService {
             "secondaryColor",
             "roles",
             "chartOfAccountsConfirmed",
-            "tier"
+            "tier",
+            "institutionType"
         ].forEach((field) => {
 
             if (payload[field] !== undefined) {

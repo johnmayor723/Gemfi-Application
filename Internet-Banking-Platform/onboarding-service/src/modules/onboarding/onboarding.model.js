@@ -102,6 +102,24 @@ const OnboardingRequestSchema = new mongoose.Schema(
             default: "starter"
         },
 
+        /**
+         * Institution type - drives terminology/labeling only (e.g.
+         * "Members" instead of "Clients", "Contributions" instead of
+         * "Savings") in gemfi-mfb-portal and gemfi-connect. Does not
+         * change the underlying Fineract product configuration - a
+         * cooperative tenant still runs on the same savings/loan
+         * products as a bank tenant, just relabeled in the UI.
+         */
+        institutionType: {
+            type: String,
+            enum: [
+                "bank",
+                "cooperative",
+                "loan_company"
+            ],
+            default: "bank"
+        },
+
         status: {
             type: String,
             enum: [

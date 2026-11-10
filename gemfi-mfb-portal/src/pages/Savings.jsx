@@ -11,10 +11,12 @@ import PageHeader from '@/components/fineract/PageHeader';
 import DataTable from '@/components/fineract/DataTable';
 import StatusBadge from '@/components/fineract/StatusBadge';
 import { useToast } from '@/components/ui/use-toast';
+import { useTerminology } from '@/lib/terminology';
 
 export default function Savings() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const t = useTerminology();
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -65,7 +67,7 @@ export default function Savings() {
           submittedOnDate: today,
         }
       });
-      toast({ title: 'Savings account created' });
+      toast({ title: `${t.savingsAccounts.replace(/s$/, '')} created` });
       setShowCreate(false);
       loadAccounts();
 
@@ -87,7 +89,7 @@ export default function Savings() {
         } catch (accErr) {
           toast({
             title: 'Account Number generation failed',
-            description: `Savings account was created, but the Account Number could not be generated: ${accErr.message}. Open the account to retry.`,
+            description: `${t.savingsAccounts.replace(/s$/, '')} was created, but the Account Number could not be generated: ${accErr.message}. Open the account to retry.`,
             variant: 'destructive',
           });
         }
@@ -101,7 +103,7 @@ export default function Savings() {
 
   const columns = [
     { key: 'accountNo', label: 'Account #' },
-    { key: 'clientName', label: 'Client' },
+    { key: 'clientName', label: t.clientSingular },
     { key: 'savingsProductName', label: 'Product' },
     { key: 'accountBalance', label: 'Balance', render: (v) => v != null ? v.toLocaleString() : '—' },
     { key: 'status', label: 'Status', render: (val) => <StatusBadge status={val} /> },
@@ -110,11 +112,11 @@ export default function Savings() {
   return (
     <div className="p-6 lg:p-8 max-w-7xl mx-auto">
       <PageHeader
-        title="Savings Accounts"
-        description="Manage savings accounts"
+        title={t.savingsAccounts}
+        description={`Manage ${t.savingsAccounts.toLowerCase()}`}
         action={
           <Button onClick={() => setShowCreate(true)} className="bg-emerald-600 hover:bg-emerald-700">
-            <Plus className="w-4 h-4 mr-2" /> New Savings
+            <Plus className="w-4 h-4 mr-2" /> New {t.savings.replace(/s$/, '')}
           </Button>
         }
       />
@@ -130,35 +132,35 @@ export default function Savings() {
           </div>
           <Button onClick={loadAccounts} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700">Search</Button>
         </div>
-        <DataTable columns={columns} data={accounts} loading={loading} emptyMessage="No savings accounts"
+        <DataTable columns={columns} data={accounts} loading={loading} emptyMessage={`No ${t.savingsAccounts.toLowerCase()}`}
           onRowClick={(row) => navigate(`/savings/${row.id}`)} />
       </div>
 
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
         <DialogContent className="bg-slate-900 border-slate-700 text-white max-w-lg">
-          <DialogHeader><DialogTitle>Create Savings Account</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Create {t.savingsAccounts.replace(/s$/, '')}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             {urlClientId ? (
               <div>
-                <Label className="text-slate-300 text-xs">Client</Label>
+                <Label className="text-slate-300 text-xs">{t.clientSingular}</Label>
                 <div className="mt-1 h-10 px-3 flex items-center rounded-md bg-slate-800 border border-emerald-700/30 text-white text-sm">
                   <span className="text-emerald-400 text-xs mr-1.5">🔒</span>
-                  {clients.find(c => String(c.id) === String(urlClientId))?.displayName || `Client #${urlClientId}`}
+                  {clients.find(c => String(c.id) === String(urlClientId))?.displayName || `${t.clientSingular} #${urlClientId}`}
                 </div>
-                <p className="text-[10px] text-slate-500 mt-1">Client is locked to the profile being viewed.</p>
+                <p className="text-[10px] text-slate-500 mt-1">{t.clientSingular} is locked to the profile being viewed.</p>
               </div>
             ) : (
               <div>
-                <Label className="text-slate-300 text-xs">Client *</Label>
+                <Label className="text-slate-300 text-xs">{t.clientSingular} *</Label>
                 <select value={form.clientId} onChange={e => setForm(p => ({ ...p, clientId: e.target.value }))}
                   className="mt-1 w-full h-10 px-3 rounded-md bg-slate-800 border border-slate-700 text-white text-sm">
-                  <option value="">Select client</option>
+                  <option value="">Select {t.clientSingular.toLowerCase()}</option>
                   {clients.map(c => <option key={c.id} value={c.id}>{c.displayName}</option>)}
                 </select>
               </div>
             )}
             <div>
-              <Label className="text-slate-300 text-xs">Savings Product *</Label>
+              <Label className="text-slate-300 text-xs">{t.savingsProducts.replace(/s$/, '')} *</Label>
               <select value={form.productId} onChange={e => setForm(p => ({ ...p, productId: e.target.value }))}
                 className="mt-1 w-full h-10 px-3 rounded-md bg-slate-800 border border-slate-700 text-white text-sm">
                 <option value="">Select product</option>

@@ -24,6 +24,7 @@ const GEMFI_STATIC = {
   primaryColor: null,
   secondaryColor: null,
   tier: null,
+  institutionType: 'bank',
   isDynamic: false,
   isResolving: false,
 };
@@ -42,6 +43,7 @@ const NEUTRAL_STATE = {
   primaryColor: null,
   secondaryColor: null,
   tier: null,
+  institutionType: 'bank',
   isDynamic: false,
   isResolving: true,
 };
@@ -175,6 +177,7 @@ async function fetchBranding(subdomain, { retries = RETRY_DELAYS_MS.length } = {
           primaryColor: body.data.primaryColor || null,
           secondaryColor: body.data.secondaryColor || null,
           tier: body.data.tier || 'starter',
+          institutionType: body.data.institutionType || 'bank',
         },
       };
     } catch {

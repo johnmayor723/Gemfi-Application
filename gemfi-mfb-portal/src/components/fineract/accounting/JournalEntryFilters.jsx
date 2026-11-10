@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, X, RotateCcw } from 'lucide-react';
+import { useTerminology } from '@/lib/terminology';
 
 const inputCls = 'h-9 px-3 rounded-md bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:border-emerald-600';
 
@@ -8,6 +9,7 @@ const inputCls = 'h-9 px-3 rounded-md bg-slate-800 border border-slate-700 text-
  * Caches filter selections in localStorage (keyed by storageKey).
  */
 export default function JournalEntryFilters({ filters, setFilters, offices, glAccounts, onApply, onReset, showEntryType = true, storageKey = 'journal_filters' }) {
+  const t = useTerminology();
   const [expanded, setExpanded] = useState(true);
   const [search, setSearch] = useState(filters.transactionId || '');
 
@@ -146,13 +148,15 @@ export default function JournalEntryFilters({ filters, setFilters, offices, glAc
               <label className="text-[11px] text-slate-400 block mb-1">Loan ID</label>
               <input type="text" value={filters.loanId || ''} onChange={(e) => update('loanId', e.target.value)} placeholder="Filter by loan" className={`${inputCls} w-full`} />
             </div>
+            {t.showSavings && (
+              <div>
+                <label className="text-[11px] text-slate-400 block mb-1">{t.savings.replace(/s$/, '')} ID</label>
+                <input type="text" value={filters.savingsAccountId || ''} onChange={(e) => update('savingsAccountId', e.target.value)} placeholder={`Filter by ${t.savings.toLowerCase()}`} className={`${inputCls} w-full`} />
+              </div>
+            )}
             <div>
-              <label className="text-[11px] text-slate-400 block mb-1">Savings ID</label>
-              <input type="text" value={filters.savingsAccountId || ''} onChange={(e) => update('savingsAccountId', e.target.value)} placeholder="Filter by savings" className={`${inputCls} w-full`} />
-            </div>
-            <div>
-              <label className="text-[11px] text-slate-400 block mb-1">Client ID</label>
-              <input type="text" value={filters.clientId || ''} onChange={(e) => update('clientId', e.target.value)} placeholder="Filter by client" className={`${inputCls} w-full`} />
+              <label className="text-[11px] text-slate-400 block mb-1">{t.clientSingular} ID</label>
+              <input type="text" value={filters.clientId || ''} onChange={(e) => update('clientId', e.target.value)} placeholder={`Filter by ${t.clientSingular.toLowerCase()}`} className={`${inputCls} w-full`} />
             </div>
           </div>
 

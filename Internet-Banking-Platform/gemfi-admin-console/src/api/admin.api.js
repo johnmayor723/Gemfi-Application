@@ -81,6 +81,7 @@ export async function createRequest(payload) {
   formData.append('primaryColor', payload.primaryColor);
   formData.append('secondaryColor', payload.secondaryColor);
   formData.append('tier', payload.tier || 'starter');
+  formData.append('institutionType', payload.institutionType || 'bank');
   if (payload.logo) formData.append('logo', payload.logo);
 
   const body = await authedFetch(ENDPOINTS.admin.create, {

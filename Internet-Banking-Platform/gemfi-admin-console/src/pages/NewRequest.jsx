@@ -17,12 +17,19 @@ const DEFAULTS = {
   primaryColor: '#0D766E',
   secondaryColor: '#FF832E',
   tier: 'starter',
+  institutionType: 'bank',
 };
 
 const TIERS = [
   { value: 'starter', label: 'Starter' },
   { value: 'professional', label: 'Professional' },
   { value: 'enterprise', label: 'Enterprise' },
+];
+
+const INSTITUTION_TYPES = [
+  { value: 'bank', label: 'Bank / MFB' },
+  { value: 'cooperative', label: 'Cooperative' },
+  { value: 'loan_company', label: 'Loan company' },
 ];
 
 function Field({ label, error, children }) {
@@ -175,6 +182,18 @@ export default function NewRequest() {
             className="w-full border border-input rounded-lg px-3.5 py-2.5 focus:ring-2 focus:ring-primary"
           >
             {TIERS.map((t) => (
+              <option key={t.value} value={t.value}>{t.label}</option>
+            ))}
+          </select>
+        </Field>
+
+        <Field label="Institution type">
+          <select
+            value={form.institutionType}
+            onChange={set('institutionType')}
+            className="w-full border border-input rounded-lg px-3.5 py-2.5 focus:ring-2 focus:ring-primary"
+          >
+            {INSTITUTION_TYPES.map((t) => (
               <option key={t.value} value={t.value}>{t.label}</option>
             ))}
           </select>

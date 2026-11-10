@@ -15,10 +15,12 @@ import ClientLoansTab from '@/components/fineract/client/ClientLoansTab';
 import ClientPlaceholderTab from '@/components/fineract/client/ClientPlaceholderTab';
 import AuditHistoryTab from '@/components/fineract/audit/AuditHistoryTab';
 import { useToast } from '@/components/ui/use-toast';
+import { useTerminology } from '@/lib/terminology';
 
 export default function ClientDetail() {
   const { id } = useParams();
   const { toast } = useToast();
+  const t = useTerminology();
   const [client, setClient] = useState(null);
   const [accounts, setAccounts] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -57,7 +59,7 @@ export default function ClientDetail() {
         body.closureReasonId = 1;
       }
       await fineractApi(`/clients/${id}?command=${cmd}`, { method: 'POST', body });
-      toast({ title: `Client ${cmd}d successfully` });
+      toast({ title: `${t.clientSingular} ${cmd}d successfully` });
       load();
     } catch (err) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
@@ -68,7 +70,7 @@ export default function ClientDetail() {
     setSaving(true);
     try {
       await fineractApi(`/clients/${id}`, { method: 'PUT', body: editForm });
-      toast({ title: 'Client updated' });
+      toast({ title: `${t.clientSingular} updated` });
       setShowEdit(false);
       load();
     } catch (err) {
@@ -87,13 +89,13 @@ export default function ClientDetail() {
     return <div className="flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-emerald-400" /></div>;
   }
   if (!client) {
-    return <div className="p-8 text-center text-slate-500">Client not found</div>;
+    return <div className="p-8 text-center text-slate-500">{t.clientSingular} not found</div>;
   }
 
   return (
     <div className="p-6 lg:p-8 max-w-6xl mx-auto">
       <Link to="/clients" className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-white mb-6">
-        <ArrowLeft className="w-4 h-4" /> Back to Clients
+        <ArrowLeft className="w-4 h-4" /> Back to {t.clients}
       </Link>
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
@@ -103,7 +105,7 @@ export default function ClientDetail() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-white">{client.displayName}</h1>
-            <p className="text-sm text-slate-400 mt-0.5">Client #{client.accountNo} · {client.officeName}</p>
+            <p className="text-sm text-slate-400 mt-0.5">{t.clientSingular} #{client.accountNo} · {client.officeName}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -119,7 +121,7 @@ export default function ClientDetail() {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="kyc">KYC</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
-          <TabsTrigger value="savings">Savings</TabsTrigger>
+          {t.showSavings && <TabsTrigger value="savings">{t.savings}</TabsTrigger>}
           <TabsTrigger value="loans">Loans</TabsTrigger>
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
           <TabsTrigger value="audit">Audit Trail</TabsTrigger>
@@ -138,16 +140,18 @@ export default function ClientDetail() {
           <ClientKycTab clientId={id} />
         </TabsContent>
         <TabsContent value="documents" className="mt-4">
-          <ClientPlaceholderTab icon={FileText} title="Client Documents" description="Document uploads and verification will appear here." />
+          <ClientPlaceholderTab icon={FileText} title={`${t.clientSingular} Documents`} description="Document uploads and verification will appear here." />
         </TabsContent>
-        <TabsContent value="savings" className="mt-4">
-          <ClientSavingsTab accounts={accounts} clientId={id} />
-        </TabsContent>
+        {t.showSavings && (
+          <TabsContent value="savings" className="mt-4">
+            <ClientSavingsTab accounts={accounts} clientId={id} />
+          </TabsContent>
+        )}
         <TabsContent value="loans" className="mt-4">
           <ClientLoansTab clientId={id} accounts={accounts} onRefreshClient={load} showApply={showApplyLoan} setShowApply={setShowApplyLoan} />
         </TabsContent>
         <TabsContent value="transactions" className="mt-4">
-          <ClientPlaceholderTab icon={Receipt} title="Client Transactions" description="Account-level transactions across all products will appear here." />
+          <ClientPlaceholderTab icon={Receipt} title={`${t.clientSingular} Transactions`} description="Account-level transactions across all products will appear here." />
         </TabsContent>
         <TabsContent value="audit" className="mt-4">
           <AuditHistoryTab entityName="CLIENT" resourceId={id} />
@@ -156,7 +160,7 @@ export default function ClientDetail() {
 
       <Dialog open={showEdit} onOpenChange={setShowEdit}>
         <DialogContent className="bg-slate-900 border-slate-700 text-white">
-          <DialogHeader><DialogTitle>Edit Client</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Edit {t.clientSingular}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div>
               <Label className="text-slate-300 text-xs">First Name</Label>

@@ -7,9 +7,11 @@ import { Label } from '@/components/ui/label';
 import PageHeader from '@/components/fineract/PageHeader';
 import StatusBadge from '@/components/fineract/StatusBadge';
 import { useToast } from '@/components/ui/use-toast';
+import { useTerminology } from '@/lib/terminology';
 
 export default function Deposit() {
   const { toast } = useToast();
+  const t = useTerminology();
   const [step, setStep] = useState(0); // 0=select client, 1=select account, 2=deposit form, 3=success
   const [clients, setClients] = useState([]);
   const [search, setSearch] = useState('');
@@ -68,7 +70,7 @@ export default function Deposit() {
           dateFormat: 'dd MMMM yyyy',
         }
       });
-      toast({ title: 'Deposit successful' });
+      toast({ title: `${t.deposit} successful` });
       // Reload the account to show updated balance
       const updated = await fineractApi(`/savingsaccounts/${selectedAccount.id}`);
       setAccounts(prev => prev.map(a => a.id === selectedAccount.id ? updated : a));
@@ -97,7 +99,7 @@ export default function Deposit() {
 
   return (
     <div className="p-6 lg:p-8 max-w-5xl mx-auto">
-      <PageHeader title="Deposit" description="Post a deposit to an active savings account" />
+      <PageHeader title={t.deposit} description={t.depositDescription} />
 
       {/* Stepper */}
       <div className="flex items-center gap-2 mb-6 text-xs">
@@ -105,7 +107,7 @@ export default function Deposit() {
         <ChevronRight className="w-3 h-3 text-slate-600" />
         <StepBadge num={2} label="Select Account" active={step >= 1} done={step > 1} />
         <ChevronRight className="w-3 h-3 text-slate-600" />
-        <StepBadge num={3} label="Deposit" active={step >= 2} done={step > 2} />
+        <StepBadge num={3} label={t.deposit} active={step >= 2} done={step > 2} />
       </div>
 
       {/* Step 0: Select Customer */}
@@ -157,8 +159,8 @@ export default function Deposit() {
           ) : activeAccounts.length === 0 ? (
             <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-8 text-center">
               <PiggyBank className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-              <p className="text-sm text-slate-400">No active savings account found.</p>
-              <p className="text-xs text-slate-500 mt-1">Create or activate a savings account before accepting deposits.</p>
+              <p className="text-sm text-slate-400">No active {t.savingsAccounts.toLowerCase()} found.</p>
+              <p className="text-xs text-slate-500 mt-1">Create or activate a {t.savings.toLowerCase().replace(/s$/, '')} account before accepting {t.deposit.toLowerCase()}s.</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -204,7 +206,7 @@ export default function Deposit() {
               <span className="text-sm text-white font-medium">{selectedAccount.accountBalance?.toLocaleString() ?? '—'}</span>
             </div>
             <div>
-              <Label className="text-slate-300 text-xs">Deposit Amount *</Label>
+              <Label className="text-slate-300 text-xs">{t.deposit} Amount *</Label>
               <Input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00"
                 className="mt-1 bg-slate-900 border-slate-700 text-white" />
             </div>
@@ -224,7 +226,7 @@ export default function Deposit() {
             <Button onClick={submitDeposit} disabled={saving || !amount || !paymentTypeId}
               className="w-full bg-emerald-600 hover:bg-emerald-700">
               {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <ArrowDownCircle className="w-4 h-4 mr-2" />}
-              Submit Deposit
+              Submit {t.deposit}
             </Button>
           </div>
         </div>
@@ -237,15 +239,15 @@ export default function Deposit() {
             <div className="w-14 h-14 rounded-full bg-emerald-500/15 flex items-center justify-center mx-auto mb-4">
               <Check className="w-7 h-7 text-emerald-400" />
             </div>
-            <h2 className="text-lg font-bold text-white mb-1">Deposit Successful</h2>
+            <h2 className="text-lg font-bold text-white mb-1">{t.deposit} Successful</h2>
             <p className="text-sm text-slate-400 mb-4">Posted to account #{selectedAccount.accountNo}</p>
             <div className="bg-slate-900/50 rounded-lg p-4 space-y-2 text-left">
               <div className="flex justify-between"><span className="text-xs text-slate-500">New Balance</span><span className="text-sm text-white font-medium">{selectedAccount.summary?.accountBalance?.toLocaleString() ?? selectedAccount.accountBalance?.toLocaleString() ?? '—'}</span></div>
               <div className="flex justify-between"><span className="text-xs text-slate-500">Available Balance</span><span className="text-sm text-white">{selectedAccount.summary?.availableBalance?.toLocaleString() ?? '—'}</span></div>
-              <div className="flex justify-between"><span className="text-xs text-slate-500">Total Deposits</span><span className="text-sm text-white">{selectedAccount.summary?.totalDeposits?.toLocaleString() ?? '—'}</span></div>
+              <div className="flex justify-between"><span className="text-xs text-slate-500">Total {t.deposit}s</span><span className="text-sm text-white">{selectedAccount.summary?.totalDeposits?.toLocaleString() ?? '—'}</span></div>
             </div>
             <div className="flex gap-2 mt-5">
-              <Button onClick={reset} variant="outline" className="flex-1 border-slate-600 text-slate-300">New Deposit</Button>
+              <Button onClick={reset} variant="outline" className="flex-1 border-slate-600 text-slate-300">New {t.deposit}</Button>
               <Button onClick={() => window.location.href = `/savings/${selectedAccount.id}`} className="flex-1 bg-emerald-600 hover:bg-emerald-700">View Account</Button>
             </div>
           </div>

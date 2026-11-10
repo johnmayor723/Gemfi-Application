@@ -23,6 +23,7 @@ const GEMFI_STATIC = {
   logoUrl: null, // null + isDynamic:false + isResolving:false => bundled GemFi asset
   primaryColor: null,
   secondaryColor: null,
+  institutionType: 'bank',
   isDynamic: false,
   isResolving: false,
 };
@@ -40,6 +41,7 @@ const NEUTRAL_STATE = {
   logoUrl: null,
   primaryColor: null,
   secondaryColor: null,
+  institutionType: 'bank',
   isDynamic: false,
   isResolving: true,
 };
@@ -166,6 +168,7 @@ async function fetchBranding(subdomain, { retries = RETRY_DELAYS_MS.length } = {
           logoUrl: body.data.logoUrl ? `${ONBOARDING_BASE}${body.data.logoUrl}` : null,
           primaryColor: body.data.primaryColor || null,
           secondaryColor: body.data.secondaryColor || null,
+          institutionType: body.data.institutionType || 'bank',
         },
       };
     } catch {

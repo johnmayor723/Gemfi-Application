@@ -5,6 +5,7 @@ import { ArrowLeft, Loader2, Check, ChevronLeft, ChevronRight, Save } from 'luci
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import PageHeader from '@/components/fineract/PageHeader';
+import { useTerminology } from '@/lib/terminology';
 import DetailsStep from '@/components/fineract/savings/steps/DetailsStep';
 import CurrencyStep from '@/components/fineract/savings/steps/CurrencyStep';
 import TermsStep from '@/components/fineract/savings/steps/TermsStep';
@@ -61,6 +62,7 @@ export default function SavingsProductWizard() {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const t = useTerminology();
   const isEdit = !!id;
   const duplicateId = location.state?.duplicateId;
 
@@ -192,10 +194,10 @@ export default function SavingsProductWizard() {
       const payload = buildPayload();
       if (isEdit) {
         await fineractApi(`/savingsproducts/${id}`, { method: 'PUT', body: payload });
-        toast({ title: 'Savings product updated successfully' });
+        toast({ title: `${t.savingsProducts.replace(/s$/, '')} updated successfully` });
       } else {
         await fineractApi('/savingsproducts', { method: 'POST', body: payload });
-        toast({ title: 'Savings product created successfully' });
+        toast({ title: `${t.savingsProducts.replace(/s$/, '')} created successfully` });
       }
       localStorage.removeItem(DRAFT_KEY);
       navigate('/products/savings');
@@ -226,9 +228,9 @@ export default function SavingsProductWizard() {
   return (
     <div className="p-6 lg:p-8 max-w-4xl mx-auto pb-24">
       <button onClick={() => navigate('/products/savings')} className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-white mb-6">
-        <ArrowLeft className="w-4 h-4" /> Back to Savings Products
+        <ArrowLeft className="w-4 h-4" /> Back to {t.savingsProducts}
       </button>
-      <PageHeader title={isEdit ? 'Edit Savings Product' : 'Create Savings Product'} description="Configure a savings product for Apache Fineract" />
+      <PageHeader title={isEdit ? `Edit ${t.savingsProducts.replace(/s$/, '')}` : `Create ${t.savingsProducts.replace(/s$/, '')}`} description={`Configure a ${t.savingsProducts.replace(/s$/, '').toLowerCase()} for GemFi Core`} />
 
       {/* Stepper */}
       <div className="flex items-center justify-between mb-8 overflow-x-auto pb-2">

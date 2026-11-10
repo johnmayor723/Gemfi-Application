@@ -19,6 +19,7 @@ export async function submitOnboardingRequest(payload) {
   formData.append('primaryColor', payload.primaryColor);
   formData.append('secondaryColor', payload.secondaryColor);
   formData.append('tier', payload.tier);
+  formData.append('institutionType', payload.institutionType);
   if (payload.logo) formData.append('logo', payload.logo);
 
   const response = await fetch(ENDPOINTS.onboarding.submit, {

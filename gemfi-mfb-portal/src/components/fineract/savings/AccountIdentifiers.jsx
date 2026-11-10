@@ -4,12 +4,14 @@ import { Button } from '@/components/ui/button';
 import { fineractApi } from '@/lib/fineract';
 import { getAccountIdentifiers, registerAccount, isAccountServiceConfigured } from '@/lib/accountApi';
 import { useToast } from '@/components/ui/use-toast';
+import { useTerminology } from '@/lib/terminology';
 
 // Displays (and, if missing, generates) the Account Number / NUBAN /
 // Fineract account number for a savings account. `compact` renders an
 // inline strip (for lists); otherwise a full card (for detail pages).
 export default function AccountIdentifiers({ fineractAccountId, clientId, clientName, clientMobile, compact = false }) {
   const { toast } = useToast();
+  const t = useTerminology();
   const [identifiers, setIdentifiers] = useState(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -39,7 +41,7 @@ export default function AccountIdentifiers({ fineractAccountId, clientId, client
         name = name || client.displayName;
         phoneNumber = phoneNumber || client.mobileNo;
       }
-      if (!phoneNumber) throw new Error('Client has no mobile number on file.');
+      if (!phoneNumber) throw new Error(`${t.clientSingular} has no mobile number on file.`);
       await registerAccount({ fineractAccountId, name, phoneNumber });
       toast({ title: 'Account Number generated' });
       await load();

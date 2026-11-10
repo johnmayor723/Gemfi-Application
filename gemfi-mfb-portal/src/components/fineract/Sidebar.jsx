@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import GemfiLogo from '@/components/fineract/GemfiLogo';
 import { useBranding, isPlatformHost } from '@/lib/branding';
+import { useTerminology } from '@/lib/terminology';
 
 // Users/Roles management is hidden from a tenant's own staff by default -
 // it controls how many staff accounts a tenant can create, which needs to
@@ -21,7 +22,12 @@ import { useBranding, isPlatformHost } from '@/lib/branding';
 // GemFi admin console instead.
 const USERS_ROLES_PATHS = new Set(['/system/users', '/system/roles']);
 
-const navSections = [
+// Paths relabeled per institution type (see src/lib/terminology.js) and,
+// for loan companies - which don't take member contributions/savings at
+// all - hidden rather than relabeled.
+const SAVINGS_PATHS = new Set(['/savings', '/products/savings', '/deposit']);
+
+const buildNavSections = (t) => [
   {
     label: 'Overview',
     items: [
@@ -31,10 +37,10 @@ const navSections = [
   {
     label: 'Core Banking',
     items: [
-      { label: 'Clients', path: '/clients', icon: Users },
+      { label: t.clients, path: '/clients', icon: Users },
       { label: 'Groups', path: '/groups', icon: UsersRound },
       { label: 'Loans', path: '/loans', icon: CreditCard },
-      { label: 'Savings', path: '/savings', icon: PiggyBank },
+      { label: t.savingsAccounts, path: '/savings', icon: PiggyBank },
       { label: 'Users', path: '/system/users', icon: UserCheck },
       { label: 'Roles & Permissions', path: '/system/roles', icon: Shield },
     ]
@@ -52,7 +58,7 @@ const navSections = [
     label: 'Products',
     items: [
       { label: 'Loan Products', path: '/products/loan', icon: Package },
-      { label: 'Savings Products', path: '/products/savings', icon: Package },
+      { label: t.savingsProducts, path: '/products/savings', icon: Package },
       { label: 'Charges', path: '/products/charges', icon: DollarSign },
     ]
   },
@@ -84,7 +90,7 @@ const navSections = [
     label: 'Operations',
     items: [
       { label: 'Transactions', path: '/transactions', icon: ArrowLeftRight },
-      { label: 'Deposit', path: '/deposit', icon: ArrowDownLeft },
+      { label: t.deposit, path: '/deposit', icon: ArrowDownLeft },
       { label: 'Reports', path: '/reports', icon: BarChart3 },
       { label: 'Audit Trail', path: '/audit-trail', icon: ScrollText },
       { label: 'Compliance', path: '/compliance', icon: ShieldCheck },
@@ -118,8 +124,10 @@ const navSections = [
 export default function Sidebar({ open, onClose }) {
   const location = useLocation();
   const branding = useBranding();
+  const t = useTerminology();
   const [collapsed, setCollapsed] = React.useState({});
   const canManageUsersRoles = isPlatformHost(window.location.hostname) || branding.tier === 'enterprise';
+  const navSections = buildNavSections(t);
 
   const toggle = (label) => {
     setCollapsed(prev => ({ ...prev, [label]: !prev[label] }));
@@ -152,9 +160,11 @@ export default function Sidebar({ open, onClose }) {
         <nav className="flex-1 overflow-y-auto py-3 px-3 space-y-1">
           {navSections.map(section => {
             const isCollapsed = collapsed[section.label];
-            const visibleItems = section.items.filter(
-              (item) => canManageUsersRoles || !USERS_ROLES_PATHS.has(item.path)
-            );
+            const visibleItems = section.items.filter((item) => {
+              if (!canManageUsersRoles && USERS_ROLES_PATHS.has(item.path)) return false;
+              if (!t.showSavings && SAVINGS_PATHS.has(item.path)) return false;
+              return true;
+            });
             if (visibleItems.length === 0) return null;
             return (
               <div key={section.label}>

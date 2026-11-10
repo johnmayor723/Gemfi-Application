@@ -9,10 +9,12 @@ import DataTable from '@/components/fineract/DataTable';
 import StatusBadge from '@/components/fineract/StatusBadge';
 import ClientWizard from '@/components/fineract/ClientWizard';
 import { useToast } from '@/components/ui/use-toast';
+import { useTerminology } from '@/lib/terminology';
 
 export default function Clients() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const t = useTerminology();
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -49,7 +51,7 @@ export default function Clients() {
   useEffect(() => { loadClients(); loadOffices(); }, []);
 
   const columns = [
-    { key: 'accountNo', label: 'Client No.' },
+    { key: 'accountNo', label: `${t.clientSingular} No.` },
     { key: 'displayName', label: 'Name' },
     { key: 'mobileNo', label: 'Phone', render: v => v || '—' },
     { key: 'externalId', label: 'BVN', render: v => v ? <span className="text-emerald-400 text-xs font-mono">{v}</span> : <span className="text-slate-600 text-xs">Not linked</span> },
@@ -60,11 +62,11 @@ export default function Clients() {
   return (
     <div className="p-6 lg:p-8 max-w-7xl mx-auto">
       <PageHeader
-        title="Clients"
-        description="Manage your client portfolio"
+        title={t.clients}
+        description={`Manage your ${t.clientSingular.toLowerCase()} portfolio`}
         action={
           <Button onClick={() => setShowWizard(true)} className="bg-emerald-600 hover:bg-emerald-700">
-            <Plus className="w-4 h-4 mr-2" /> New Client
+            <Plus className="w-4 h-4 mr-2" /> New {t.clientSingular}
           </Button>
         }
       />
@@ -77,7 +79,7 @@ export default function Clients() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && loadClients()}
-              placeholder="Search clients…"
+              placeholder={`Search ${t.clients.toLowerCase()}…`}
               className="pl-9 bg-slate-900 border-slate-700 text-white placeholder:text-slate-600"
             />
           </div>
@@ -89,7 +91,7 @@ export default function Clients() {
           columns={columns}
           data={clients}
           loading={loading}
-          emptyMessage="No clients found"
+          emptyMessage={`No ${t.clients.toLowerCase()} found`}
           onRowClick={(row) => navigate(`/clients/${row.id}`)}
         />
       </div>

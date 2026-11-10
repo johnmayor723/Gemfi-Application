@@ -15,6 +15,11 @@ const TIERS = [
   { value: 'professional', label: 'Professional' },
   { value: 'enterprise', label: 'Enterprise' },
 ];
+const INSTITUTION_TYPES = [
+  { value: 'bank', label: 'Bank / MFB' },
+  { value: 'cooperative', label: 'Cooperative' },
+  { value: 'loan_company', label: 'Loan company' },
+];
 
 function Field({ label, children }) {
   return (
@@ -276,6 +281,7 @@ export default function RequestDetail() {
     primaryColor: request.primaryColor,
     secondaryColor: request.secondaryColor,
     tier: request.tier,
+    institutionType: request.institutionType,
   });
 
   const addRole = () => {
@@ -457,6 +463,21 @@ export default function RequestDetail() {
                   Enterprise organizations get self-service Users &amp; Roles management in their own portal; Starter/Professional organizations have that done for them from here. Can be changed at any time, even after the organization is live.
                 </p>
               </Field>
+              <Field label="Institution type">
+                <select
+                  disabled={!isPending}
+                  value={request.institutionType || 'bank'}
+                  onChange={set('institutionType')}
+                  className="w-full border border-input rounded-lg px-3.5 py-2.5 focus:ring-2 focus:ring-primary disabled:bg-muted disabled:text-muted-foreground"
+                >
+                  {INSTITUTION_TYPES.map((t) => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  Drives terminology only in the portal/connect app (e.g. "Members" and "Contributions" for a cooperative, not deposit-taking language). Does not change the GemFi Core product configuration.
+                </p>
+              </Field>
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Primary color">
                   <div className="flex items-center gap-3">
@@ -563,6 +584,7 @@ export default function RequestDetail() {
             <h2 className="font-semibold">Organization info</h2>
             <div className="mt-3">
               <ReadOnlyRow label="Tier" value={TIERS.find((t) => t.value === request.tier)?.label || request.tier} />
+              <ReadOnlyRow label="Institution type" value={INSTITUTION_TYPES.find((t) => t.value === request.institutionType)?.label || request.institutionType} />
               <ReadOnlyRow label="GemFi Core ID" value={request.fineractTenantIdentifier} mono />
               <ReadOnlyRow label="Submitted by" value={request.submittedBy} />
               <ReadOnlyRow label="Reviewed by" value={request.reviewedBy} />

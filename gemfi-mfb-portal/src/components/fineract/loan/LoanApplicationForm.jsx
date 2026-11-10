@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import DataTable from '@/components/fineract/DataTable';
 import { useToast } from '@/components/ui/use-toast';
+import { useTerminology } from '@/lib/terminology';
 
 const fmtDate = (d) =>
   d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }) : null;
@@ -20,6 +21,7 @@ const enumId = (val, fallback) => {
 };
 
 export default function LoanApplicationForm({ clientId, onClose, onSubmitted }) {
+  const t = useTerminology();
   const { toast } = useToast();
   const [step, setStep] = useState(0);
   const [products, setProducts] = useState([]);
@@ -203,7 +205,7 @@ export default function LoanApplicationForm({ clientId, onClose, onSubmitted }) 
           <div className="bg-slate-800/50 border border-slate-700/50 rounded-lg p-3 flex items-center gap-3">
             <FileText className="w-4 h-4 text-blue-400 shrink-0" />
             <div className="text-xs text-slate-400">
-              <span className="text-slate-500">Client ID:</span>{' '}
+              <span className="text-slate-500">{t.clientSingular} ID:</span>{' '}
               <span className="text-white font-medium">{clientId}</span>
               <span className="text-slate-600 mx-2">·</span>
               <span className="text-slate-500">Product:</span>{' '}

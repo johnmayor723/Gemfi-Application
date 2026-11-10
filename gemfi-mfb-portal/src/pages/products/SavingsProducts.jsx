@@ -8,10 +8,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import PageHeader from '@/components/fineract/PageHeader';
 import DataTable from '@/components/fineract/DataTable';
 import { useToast } from '@/components/ui/use-toast';
+import { useTerminology } from '@/lib/terminology';
 
 export default function SavingsProducts() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const t = useTerminology();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -83,8 +85,8 @@ export default function SavingsProducts() {
 
   return (
     <div className="p-6 lg:p-8 max-w-7xl mx-auto">
-      <PageHeader title="Savings Products" description="View, create, and manage savings product configurations"
-        action={<Button onClick={() => navigate('/products/savings/create')} className="bg-emerald-600 hover:bg-emerald-700"><Plus className="w-4 h-4 mr-2" /> Create Savings Product</Button>} />
+      <PageHeader title={t.savingsProducts} description={`View, create, and manage ${t.savingsProducts.toLowerCase()} configurations`}
+        action={<Button onClick={() => navigate('/products/savings/create')} className="bg-emerald-600 hover:bg-emerald-700"><Plus className="w-4 h-4 mr-2" /> Create {t.savingsProducts.replace(/s$/, '')}</Button>} />
 
       <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl overflow-hidden">
         <div className="p-4 border-b border-slate-700/50 flex gap-3">
@@ -95,7 +97,7 @@ export default function SavingsProducts() {
           </div>
           <Button onClick={load} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700">Search</Button>
         </div>
-        <DataTable columns={columns} data={products} loading={loading} emptyMessage="No savings products"
+        <DataTable columns={columns} data={products} loading={loading} emptyMessage={`No ${t.savingsProducts.toLowerCase()}`}
           onRowClick={(row) => navigate(`/products/savings/${row.id}/edit`)} />
       </div>
 

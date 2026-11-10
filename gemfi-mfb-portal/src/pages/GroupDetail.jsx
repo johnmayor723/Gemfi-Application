@@ -10,10 +10,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import StatusBadge from '@/components/fineract/StatusBadge';
 import DataTable from '@/components/fineract/DataTable';
 import { useToast } from '@/components/ui/use-toast';
+import { useTerminology } from '@/lib/terminology';
 
 export default function GroupDetail() {
   const { id } = useParams();
   const { toast } = useToast();
+  const t = useTerminology();
   const [group, setGroup] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showAddMembers, setShowAddMembers] = useState(false);
@@ -195,7 +197,7 @@ export default function GroupDetail() {
 
   const statusVal = group.status?.value?.toLowerCase() || '';
   const memberColumns = [
-    { key: 'accountNo', label: 'Client #' },
+    { key: 'accountNo', label: `${t.clientSingular} #` },
     { key: 'displayName', label: 'Name', render: (v, row) => <Link to={`/clients/${row.id}`} className="text-emerald-400 hover:underline">{v}</Link> },
     { key: 'mobileNo', label: 'Mobile', render: v => v || '—' },
     { key: 'status', label: 'Status', render: (val) => <StatusBadge status={val} /> },

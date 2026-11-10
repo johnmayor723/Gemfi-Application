@@ -5,11 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
+import { useTerminology } from '@/lib/terminology';
 
 const legalForms = [{ id: 1, name: 'Individual' }];
 
 export default function ClientWizard({ offices, onClose, onCreated }) {
   const { toast } = useToast();
+  const t = useTerminology();
   const [saving, setSaving] = useState(false);
   const [genders, setGenders] = useState([]);
   const [gendersLoaded, setGendersLoaded] = useState(false);
@@ -79,7 +81,7 @@ export default function ClientWizard({ offices, onClose, onCreated }) {
       const res = await fineractApi('/clients', { method: 'POST', body });
       const clientId = res.resourceId || res.clientId;
 
-      toast({ title: 'Client created successfully' });
+      toast({ title: `${t.clientSingular} created successfully` });
       onCreated(clientId);
     } catch (err) {
       toast({ title: 'Validation Error', description: err.message, variant: 'destructive' });
@@ -95,8 +97,8 @@ export default function ClientWizard({ offices, onClose, onCreated }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={onClose}>
       <div className="w-full max-w-2xl bg-slate-900 border border-slate-700 rounded-xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="p-6 border-b border-slate-800">
-          <h2 className="text-lg font-bold text-white">New Client</h2>
-          <p className="text-sm text-slate-400 mt-1">Create a new client in Fineract</p>
+          <h2 className="text-lg font-bold text-white">New {t.clientSingular}</h2>
+          <p className="text-sm text-slate-400 mt-1">Create a new {t.clientSingular.toLowerCase()} in Fineract</p>
         </div>
 
         <div className="p-6 space-y-6">
@@ -139,7 +141,7 @@ export default function ClientWizard({ offices, onClose, onCreated }) {
           {/* Client Configuration */}
           <div>
             <h3 className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-              <Settings className="w-3.5 h-3.5" /> Client Configuration
+              <Settings className="w-3.5 h-3.5" /> {t.clientSingular} Configuration
             </h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -161,7 +163,7 @@ export default function ClientWizard({ offices, onClose, onCreated }) {
               <div className="col-span-2">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={form.activateNow} onChange={e => set('activateNow', e.target.checked)} className="w-4 h-4 rounded accent-emerald-600" />
-                  <span className="text-sm text-slate-300">Activate client immediately</span>
+                  <span className="text-sm text-slate-300">Activate {t.clientSingular.toLowerCase()} immediately</span>
                 </label>
               </div>
               {form.activateNow && (
@@ -178,7 +180,7 @@ export default function ClientWizard({ offices, onClose, onCreated }) {
         <div className="p-6 border-t border-slate-800 flex items-center justify-end gap-2">
           <Button variant="ghost" onClick={onClose} className="text-slate-400">Cancel</Button>
           <Button onClick={submit} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">
-            {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Check className="w-4 h-4 mr-1" />} Create Client
+            {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Check className="w-4 h-4 mr-1" />} Create {t.clientSingular}
           </Button>
         </div>
       </div>

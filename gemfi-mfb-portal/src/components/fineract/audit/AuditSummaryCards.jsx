@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Database, Calendar, CreditCard, Users, PiggyBank, Settings } from 'lucide-react';
 import { fetchAudits, toFineractDate } from '@/lib/auditApi';
+import { useTerminology } from '@/lib/terminology';
 
 export default function AuditSummaryCards() {
+  const t = useTerminology();
   const [counts, setCounts] = useState({ total: 0, today: 0, loan: 0, client: 0, savings: 0, config: 0 });
   const [loading, setLoading] = useState(true);
 
@@ -41,10 +43,10 @@ export default function AuditSummaryCards() {
     { label: 'Total Events', value: counts.total, icon: Database, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
     { label: "Today's Events", value: counts.today, icon: Calendar, color: 'text-blue-400', bg: 'bg-blue-500/10' },
     { label: 'Loan Activities', value: counts.loan, icon: CreditCard, color: 'text-purple-400', bg: 'bg-purple-500/10' },
-    { label: 'Client Activities', value: counts.client, icon: Users, color: 'text-cyan-400', bg: 'bg-cyan-500/10' },
-    { label: 'Savings Activities', value: counts.savings, icon: PiggyBank, color: 'text-amber-400', bg: 'bg-amber-500/10' },
+    { label: `${t.clientSingular} Activities`, value: counts.client, icon: Users, color: 'text-cyan-400', bg: 'bg-cyan-500/10' },
+    t.showSavings && { label: `${t.savings} Activities`, value: counts.savings, icon: PiggyBank, color: 'text-amber-400', bg: 'bg-amber-500/10' },
     { label: 'Config Changes', value: counts.config, icon: Settings, color: 'text-slate-400', bg: 'bg-slate-500/10' },
-  ];
+  ].filter(Boolean);
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">

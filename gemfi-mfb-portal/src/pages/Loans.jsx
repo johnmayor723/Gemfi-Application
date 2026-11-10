@@ -9,6 +9,7 @@ import PageHeader from '@/components/fineract/PageHeader';
 import DataTable from '@/components/fineract/DataTable';
 import StatusBadge from '@/components/fineract/StatusBadge';
 import { useToast } from '@/components/ui/use-toast';
+import { useTerminology } from '@/lib/terminology';
 
 const TABS = [
   { key: 'applications', label: 'Loan Applications', filter: () => true },
@@ -23,6 +24,7 @@ const TABS = [
 export default function Loans() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const t = useTerminology();
   const [loans, setLoans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -46,7 +48,7 @@ export default function Loans() {
 
   const columns = [
     { key: 'accountNo', label: 'Account #' },
-    { key: 'clientName', label: 'Client' },
+    { key: 'clientName', label: t.clientSingular },
     { key: 'loanProductName', label: 'Product' },
     { key: 'principal', label: 'Principal', render: (v) => v ? v.toLocaleString() : '—' },
     { key: 'loanBalance', label: 'Balance', render: (v) => v != null ? v.toLocaleString() : '—' },
